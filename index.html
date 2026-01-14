@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>نظام إدارة الطلبات - كشف التكرار</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { 
+            font-family: 'Cairo', sans-serif; 
+            box-sizing: border-box;
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #f0f4f8 0%, #e6f0ff 100%);
+            min-height: 100vh;
+        }
+        
+        .hidden { 
+            display: none !important; 
+        }
+        
+        /* تصميم البطاقات الزجاجية */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* بطاقة الطلب */
+        .order-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-right: 6px solid #3b82f6;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .order-card.duplicate {
+            border-right: 6px solid #ef4444;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+            animation: pulseWarning 2s infinite;
+        }
+        
+        @keyframes pulseWarning {
+            0%, 100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1); }
+            50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2); }
+        }
+        
+        /* شارة التكرار */
+        .duplicate-badge {
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            background: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+        }
+        
+        /* نافذة التنبيه */
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .alert-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            animation: alertSlideIn 0.4s ease;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border-top: 8px solid #ef4444;
+        }
+        
+        @keyframes alertSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* المودال */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* الحقول */
+        input, select, textarea {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* تحسين عرض الرد */
+        .reply-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-size: 14px;
+            color: #1e40af;
+            font-weight: 700;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* البادجات */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        /* الأزرار */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+        
+        /* تصميم متجاوب */
+        @media (max-width: 640px) {
+            .modal-content {
+                padding: 20px;
+                border-radius: 20px;
+            }
+            
+            .alert-modal {
+                padding: 20px;
+                border-radius: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- صفحة تسجيل الدخول -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md rounded-3xl p-10 shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full mb-6 shadow-lg">
+                    <i class="fas fa-shield-check text-white text-4xl"></i>
+                </div>
+                <h1 class="text-2xl font-black text-gray-800 mb-2">نظام إدارة الطلبات</h1>
+                <p class="text-gray-600 text-sm">مع نظام كشف التكرار الذكي</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-key ml-1"></i> رمز الدخول
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="login-pass" 
+                            class="w-full p-4 pr-12 border-2 border-gray-200 rounded-2xl text-center text-xl tracking-widest focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                            placeholder="أدخل رمز الدخول"
+                            maxlength="4"
+                        >
+                        <i class="fas fa-key absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <button 
+                    onclick="handleLogin()" 
+                    class="w-full btn btn-primary py-4 rounded-2xl text-lg"
+                >
+                    <i class="fas fa-sign-in-alt ml-2"></i> دخول إلى النظام
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <div id="main-app" class="hidden min-h-screen">
+        <!-- شريط التنقل العلوي -->
+        <header class="glass-card shadow-sm mb-6 mx-4 mt-4 rounded-2xl sticky top-4 z-40">
+            <div class="flex justify-between items-center p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-search-plus text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 id="user-display-name" class="font-bold text-lg text-gray-800"></h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="user-role-badge" class="badge"></span>
+                            <button onclick="refreshOrders()" class="text-xs text-gray-500 hover:text-blue-600">
+                                <i class="fas fa-sync-alt ml-1"></i> تحديث
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button 
+                    onclick="logout()" 
+                    class="btn btn-danger px-6"
+                >
+                    <i class="fas fa-sign-out-alt"></i> خروج
+                </button>
+            </div>
+        </header>
+
+        <!-- محتوى التطبيق -->
+        <main class="max-w-4xl mx-auto px-4 pb-24">
+            <!-- إحصائيات المسؤول -->
+            <div id="admin-stats" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">إجمالي الطلبات</p>
+                            <h3 id="stat-total" class="text-3xl font-bold text-gray-800">0</h3>
+                        </div>
+                        <i class="fas fa-file-alt text-blue-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">قيد المراجعة</p>
+                            <h3 id="stat-pending" class="text-3xl font-bold text-amber-600">0</h3>
+                        </div>
+                        <i class="fas fa-clock text-amber-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">المكتملة</p>
+                            <h3 id="stat-done" class="text-3xl font-bold text-emerald-600">0</h3>
+                        </div>
+                        <i class="fas fa-check-circle text-emerald-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">مكررة</p>
+                            <h3 id="stat-duplicate" class="text-3xl font-bold text-red-600">0</h3>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم المستخدم - تقديم طلب جديد -->
+            <div id="user-section" class="hidden mb-8">
+                <div class="glass-card rounded-2xl p-6 mb-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-plus text-white text-lg"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">تقديم طلب جديد</h2>
+                    </div>
+                    
+                    <form id="request-form" class="space-y-6">
+                        <!-- الصف الأول: الجنس والاسم -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-user ml-1 text-gray-400"></i> الجنس *
+                                </label>
+                                <select id="gender" required class="w-full">
+                                    <option value="">اختر الجنس</option>
+                                    <option value="ذكر">ذكر</option>
+                                    <option value="أنثى">أنثى</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-user-tag ml-1 text-gray-400"></i> اسم صاحب الطلب *
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="subject-name" 
+                                    required 
+                                    placeholder="الاسم الكامل"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- الصف الثاني: تواريخ الميلاد والانتساب -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- تاريخ الميلاد -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-birthday-cake ml-1 text-gray-400"></i> تاريخ الميلاد *
+                                </label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="b-day" 
+                                            required 
+                                            min="1" 
+                                            max="31"
+                                            placeholder="يوم"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="b-month" 
+                                            required 
+                                            min="1" 
+                                            max="12"
+                                            placeholder="شهر"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="b-year" 
+                                            required 
+                                            min="1900" 
+                                            max="2026"
+                                            placeholder="سنة"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- تاريخ الانتساب -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-calendar-alt ml-1 text-gray-400"></i> تاريخ الانتساب
+                                    <span class="text-gray-400 text-xs">(اختياري)</span>
+                                </label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="j-day" 
+                                            min="1" 
+                                            max="31"
+                                            placeholder="يوم"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="j-month" 
+                                            min="1" 
+                                            max="12"
+                                            placeholder="شهر"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="number" 
+                                            id="j-year" 
+                                            min="1900" 
+                                            max="2026"
+                                            placeholder="سنة"
+                                            class="text-center"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الصف الثالث: الفئة والملاحظات -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- الفئة (اختياري) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-layer-group ml-1 text-gray-400"></i> الفئة
+                                    <span class="text-gray-400 text-xs">(اختياري)</span>
+                                </label>
+                                <select id="category" class="w-full">
+                                    <option value="">اختر الفئة (اختياري)</option>
+                                    <option value="1">الفئة 1</option>
+                                    <option value="2">الفئة 2</option>
+                                    <option value="3">الفئة 3</option>
+                                    <option value="4">الفئة 4</option>
+                                    <option value="5">الفئة 5</option>
+                                    <option value="6">الفئة 6</option>
+                                    <option value="7">الفئة 7</option>
+                                    <option value="8">الفئة 8</option>
+                                    <option value="9">الفئة 9</option>
+                                    <option value="10">الفئة 10</option>
+                                    <option value="11">الفئة 11</option>
+                                    <option value="12">الفئة 12</option>
+                                    <option value="13">الفئة 13</option>
+                                    <option value="14">الفئة 14</option>
+                                    <option value="15">الفئة 15</option>
+                                </select>
+                            </div>
+
+                            <!-- الملاحظات -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-sticky-note ml-1 text-gray-400"></i> الملاحظات
+                                    <span class="text-gray-400 text-xs">(اختياري)</span>
+                                </label>
+                                <textarea 
+                                    id="notes" 
+                                    rows="3" 
+                                    placeholder="أي تفاصيل أو معلومات إضافية..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- زر الإرسال -->
+                        <div class="pt-4">
+                            <button 
+                                type="submit" 
+                                id="submit-btn" 
+                                class="w-full btn btn-primary py-4 rounded-2xl text-lg"
+                            >
+                                <i class="fas fa-search-check ml-2"></i> فحص وإرسال الطلب
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- قسم البحث والتصفية -->
+            <div class="glass-card rounded-2xl p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-3">
+                        <i class="fas fa-history text-blue-600"></i>
+                        سجل الطلبات
+                        <span id="duplicate-count" class="hidden bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
+                            <i class="fas fa-exclamation-triangle ml-1"></i>
+                            <span id="duplicate-number">0</span> مكررة
+                        </span>
+                    </h2>
+                    
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                id="search-box" 
+                                class="w-full p-3 pr-10 rounded-xl"
+                                placeholder="ابحث بالاسم أو الملاحظات..."
+                            >
+                        </div>
+                        
+                        <select 
+                            id="filter-status" 
+                            class="w-full sm:w-auto p-3 rounded-xl"
+                        >
+                            <option value="">كل الحالات</option>
+                            <option value="قيد المراجعة">قيد المراجعة</option>
+                            <option value="مكتمل">مكتملة</option>
+                            <option value="duplicate">مكررة فقط</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- حاوية بطاقات الطلبات -->
+                <div id="orders-cards-container">
+                    <!-- سيتم إضافة البطاقات هنا ديناميكياً -->
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p>جاري تحميل الطلبات...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- مودال رد المسؤول -->
+    <div id="modal-reply" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800" id="modal-title">رد على الطلب</h3>
+                <button 
+                    onclick="closeModal()" 
+                    class="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="modal-content" class="space-y-4">
+                <!-- سيتم تعبئة المحتوى ديناميكياً -->
+            </div>
+            
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+                <button 
+                    onclick="closeModal()" 
+                    class="flex-1 btn btn-secondary py-3"
+                >
+                    إلغاء
+                </button>
+                <button 
+                    id="modal-save-btn" 
+                    onclick="saveReply()" 
+                    class="flex-1 btn btn-primary py-3"
+                >
+                    <i class="fas fa-check ml-2"></i> حفظ الرد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تنبيه التكرار -->
+    <div id="duplicate-alert" class="alert-overlay hidden">
+        <div class="alert-modal">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-14 h-14 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-gray-800">⚠️ تنبيه: طلب مكرر</h3>
+                    <p class="text-gray-600 text-sm">تم اكتشاف طلب مسبق بنفس البيانات!</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4" id="duplicate-alert-content">
+                <!-- سيتم تعبئة محتوى التنبيه هنا -->
+            </div>
+            
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+                <button 
+                    onclick="closeDuplicateAlert()" 
+                    class="flex-1 btn btn-secondary py-3"
+                >
+                    <i class="fas fa-times ml-2"></i> إلغاء
+                </button>
+                <button 
+                    id="force-submit-btn" 
+                    onclick="forceSubmitOrder()" 
+                    class="flex-1 btn btn-danger py-3"
+                >
+                    <i class="fas fa-exclamation-triangle ml-2"></i> إرسال مع التحذير
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOzouJz7ROysGrL2KoS6GPU046Mfq5EKg",
+            authDomain: "damin-62c82.firebaseapp.com",
+            databaseURL: "https://damin-62c82-default-rtdb.firebaseio.com",
+            projectId: "damin-62c82",
+            storageBucket: "damin-62c82.firebasestorage.app",
+            messagingSenderId: "787751266614",
+            appId: "1:787751266614:web:4045deaf010156db4eab97"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const usersMap = {
+            "0780": { name: "المسؤول العام", role: "admin" },
+            "2004": { name: "مهدي أحمد", role: "user" },
+            "1982": { name: "مهند علي (أبو سيف)", role: "user" },
+            "2001": { name: "مهدي (د. إيهاب)", role: "user" },
+            "1996": { name: "حيدر الكرعاوي", role: "user" },
+            "1234": { name: "مستخدم تجريبي", role: "user" }
+        };
+
+        let currentUser = null;
+        let allOrders = [];
+        let selectedOrderId = '';
+        let currentNewOrderData = null;
+        let duplicateOrders = [];
+        let duplicateCount = 0;
+
+        // دالة تسجيل الدخول
+        window.handleLogin = function() {
+            const pass = document.getElementById('login-pass').value.trim();
+            if (usersMap[pass]) {
+                currentUser = usersMap[pass];
+                
+                // حفظ بيانات الجلسة
+                const sessionData = {
+                    ...currentUser,
+                    loginTime: new Date().toISOString()
+                };
+                localStorage.setItem('user_session', JSON.stringify(sessionData));
+                
+                showDashboard();
+            } else {
+                alert("رمز الدخول غير صحيح!");
+            }
+        }
+
+        // دالة عرض لوحة التحكم
+        function showDashboard() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            
+            // تحديث معلومات المستخدم
+            document.getElementById('user-display-name').innerText = currentUser.name;
+            
+            const roleBadge = document.getElementById('user-role-badge');
+            roleBadge.innerText = currentUser.role === 'admin' ? "مدير النظام" : "مستخدم";
+            roleBadge.className = currentUser.role === 'admin' 
+                ? 'badge badge-success' 
+                : 'badge badge-info';
+            
+            // إظهار الأقسام المناسبة
+            if (currentUser.role === 'admin') {
+                document.getElementById('admin-stats').classList.remove('hidden');
+                document.getElementById('user-section').classList.add('hidden');
+            } else {
+                document.getElementById('admin-stats').classList.add('hidden');
+                document.getElementById('user-section').classList.remove('hidden');
+            }
+            
+            fetchOrders();
+            setupSearchAndFilter();
+        }
+
+        // دالة تحديث الطلبات
+        window.refreshOrders = function() {
+            fetchOrders();
+        }
+
+        // دالة الكشف عن التكرار
+        function checkForDuplicates(newOrder) {
+            duplicateOrders = [];
+            
+            allOrders.forEach(existingOrder => {
+                // مقارنة الجنس
+                const genderMatch = newOrder.gender === existingOrder.gender;
+                
+                // مقارنة تاريخ الميلاد
+                const birthMatch = newOrder.birth === existingOrder.birth;
+                
+                // مقارنة تاريخ الانتساب (إذا كان موجوداً في كلا الطلبين)
+                let joinMatch = false;
+                if (newOrder.joinDate && existingOrder.joinDate) {
+                    joinMatch = newOrder.joinDate === existingOrder.joinDate;
+                } else if (!newOrder.joinDate && !existingOrder.joinDate) {
+                    joinMatch = true; // كلاهما فارغ
+                } else if (!newOrder.joinDate || !existingOrder.joinDate) {
+                    joinMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
+                }
+                
+                // مقارنة الفئة (إذا كانت موجودة في كلا الطلبين)
+                let categoryMatch = false;
+                if (newOrder.category && existingOrder.category) {
+                    categoryMatch = newOrder.category === existingOrder.category;
+                } else if (!newOrder.category && !existingOrder.category) {
+                    categoryMatch = true; // كلاهما فارغ
+                } else if (!newOrder.category || !existingOrder.category) {
+                    categoryMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
+                }
+                
+                // إذا كان هناك تطابق في جميع الحقول المطلوبة
+                if (genderMatch && birthMatch && joinMatch && categoryMatch) {
+                    duplicateOrders.push(existingOrder);
+                }
+            });
+            
+            return duplicateOrders.length > 0;
+        }
+
+        // دالة إرسال الطلب الجديد مع فحص التكرار
+        document.getElementById('request-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            // جمع البيانات من النموذج
+            const gender = document.getElementById('gender').value;
+            const subjectName = document.getElementById('subject-name').value.trim();
+            const category = document.getElementById('category').value;
+            const bDay = document.getElementById('b-day').value;
+            const bMonth = document.getElementById('b-month').value;
+            const bYear = document.getElementById('b-year').value;
+            const jDay = document.getElementById('j-day').value;
+            const jMonth = document.getElementById('j-month').value;
+            const jYear = document.getElementById('j-year').value;
+            const notes = document.getElementById('notes').value.trim();
+            
+            // التحقق من الحقول المطلوبة
+            if (!gender || !subjectName || !bDay || !bMonth || !bYear) {
+                alert("الرجاء ملء جميع الحقول المطلوبة (*)");
+                return;
+            }
+            
+            // إعداد بيانات الطلب الجديد
+            const birthDate = `${bDay}/${bMonth}/${bYear}`;
+            let joinDate = '';
+            if (jDay && jMonth && jYear) {
+                joinDate = `${jDay}/${jMonth}/${jYear}`;
+            }
+            
+            const newOrderData = {
+                sender: currentUser.name,
+                gender: gender,
+                subjectName: subjectName,
+                category: category || '',
+                birth: birthDate,
+                joinDate: joinDate,
+                notes: notes,
+                status: "قيد المراجعة",
+                reply: "",
+                timestamp: new Date().toLocaleString('ar-EG'),
+                timestampOrder: Date.now(),
+                senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
+            };
+            
+            // حفظ بيانات الطلب الحالية لاستخدامها لاحقاً
+            currentNewOrderData = newOrderData;
+            
+            // فحص التكرار
+            const hasDuplicates = checkForDuplicates(newOrderData);
+            
+            if (hasDuplicates) {
+                // عرض نافذة التنبيه
+                showDuplicateAlert(duplicateOrders, newOrderData);
+            } else {
+                // لا يوجد تكرار، المتابعة في الإرسال العادي
+                submitOrder(newOrderData);
+            }
+        };
+
+        // دالة عرض تنبيه التكرار
+        function showDuplicateAlert(duplicates, newOrder) {
+            let alertContent = `
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                    <p class="font-bold text-red-700 mb-2">تفاصيل الطلب الجديد:</p>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">الجنس:</span>
+                            <span class="font-bold">${newOrder.gender}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">تاريخ الميلاد:</span>
+                            <span class="font-bold">${newOrder.birth}</span>
+                        </div>
+                        ${newOrder.joinDate ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">تاريخ الانتساب:</span>
+                            <span class="font-bold">${newOrder.joinDate}</span>
+                        </div>
+                        ` : ''}
+                        ${newOrder.category ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">الفئة:</span>
+                            <span class="font-bold">فئة ${newOrder.category}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p class="font-bold text-amber-700 mb-3">
+                        <i class="fas fa-exclamation-circle ml-1"></i>
+                        تم العثور على ${duplicates.length} طلب مكرر سابقاً:
+                    </p>
+            `;
+            
+            duplicates.forEach((dup, index) => {
+                const duplicateDate = new Date(dup.timestampOrder).toLocaleString('ar-EG');
+                alertContent += `
+                    <div class="mb-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-gray-800">${index + 1}. ${dup.subjectName}</span>
+                            <span class="text-xs text-gray-500">${duplicateDate}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <div class="flex justify-between">
+                                <span>المرسل:</span>
+                                <span class="font-bold">${dup.sender}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>حالة الطلب:</span>
+                                <span class="font-bold ${dup.status === 'مكتمل' ? 'text-green-600' : 'text-amber-600'}">${dup.status}</span>
+                            </div>
+                            ${dup.reply ? `
+                            <div class="mt-2">
+                                <span class="text-gray-500">رد المسؤول:</span>
+                                <p class="text-gray-700 text-xs mt-1 bg-gray-100 p-2 rounded">${dup.reply.substring(0, 100)}${dup.reply.length > 100 ? '...' : ''}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            alertContent += `
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+                    <p class="text-blue-700 text-sm flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i>
+                        <span>هذا التنبيه يظهر لكل من المستخدم والمسؤولين لمنع التكرار</span>
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('duplicate-alert-content').innerHTML = alertContent;
+            document.getElementById('duplicate-alert').classList.remove('hidden');
+            
+            // إرسال إشعار للمسؤولين إذا كان المستخدم ليس مسؤول
+            if (currentUser.role !== 'admin') {
+                sendDuplicateNotificationToAdmins(newOrder, duplicates);
+            }
+        }
+
+        // دالة إرسال إشعار التكرار للمسؤولين
+        function sendDuplicateNotificationToAdmins(newOrder, duplicates) {
+            // في نظام حقيقي، هنا نرسل إشعاراً للمسؤولين
+            // يمكن إضافة Firebase Cloud Messaging أو إرسال إشعار في قاعدة البيانات
+            
+            const notificationData = {
+                type: 'duplicate_warning',
+                newOrder: newOrder,
+                duplicateCount: duplicates.length,
+                timestamp: Date.now(),
+                notifiedAdmins: true
+            };
+            
+            // تخزين الإشعار في قاعدة البيانات للمسؤولين
+            try {
+                push(ref(db, 'notifications'), notificationData);
+            } catch (error) {
+                console.log("تم اكتشاف تكرار، لكن لم يتم إرسال إشعار للمسؤولين:", error);
+            }
+        }
+
+        // دالة الإرسال القسري (مع التحذير)
+        window.forceSubmitOrder = async function() {
+            if (!currentNewOrderData) return;
+            
+            const btn = document.getElementById('force-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
+            
+            // إضافة علامة أن الطلب مكرر
+            currentNewOrderData.isDuplicate = true;
+            currentNewOrderData.duplicateWarning = `⚠️ تنبيه: هذا الطلب مكرر ${duplicateOrders.length} مرة سابقة`;
+            currentNewOrderData.duplicateReferences = duplicateOrders.map(d => d.id);
+            
+            try {
+                await push(ref(db, 'orders'), currentNewOrderData);
+                
+                // إغلاق نافذة التنبيه
+                closeDuplicateAlert();
+                
+                // إظهار رسالة نجاح
+                alert(`✅ تم إرسال الطلب مع التحذير\nتم اكتشاف ${duplicateOrders.length} طلب مكرر سابقاً`);
+                
+                // إعادة تعيين النموذج
+                document.getElementById('request-form').reset();
+                
+                // تحديث قائمة الطلبات
+                fetchOrders();
+            } catch (error) {
+                alert("حدث خطأ في إرسال الطلب: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle ml-2"></i> إرسال مع التحذير';
+            }
+        };
+
+        // دالة الإرسال العادي (بدون تكرار)
+        async function submitOrder(orderData) {
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
+            
+            try {
+                await push(ref(db, 'orders'), orderData);
+                alert("✅ تم إرسال الطلب بنجاح");
+                document.getElementById('request-form').reset();
+                fetchOrders();
+            } catch (error) {
+                alert("حدث خطأ في إرسال الطلب: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search-check ml-2"></i> فحص وإرسال الطلب';
+            }
+        }
+
+        // دالة إغلاق نافذة التنبيه
+        window.closeDuplicateAlert = function() {
+            document.getElementById('duplicate-alert').classList.add('hidden');
+            currentNewOrderData = null;
+            duplicateOrders = [];
+        };
+
+        // دالة جلب الطلبات
+        function fetchOrders() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val();
+                allOrders = [];
+                duplicateCount = 0;
+                let stats = { total: 0, pending: 0, done: 0, duplicate: 0 };
+                
+                if (data) {
+                    for (let id in data) {
+                        const order = { id, ...data[id] };
+                        allOrders.push(order);
+                        stats.total++;
+                        if (order.status === "قيد المراجعة") stats.pending++; else stats.done++;
+                        
+                        // حساب الطلبات المكررة
+                        if (order.isDuplicate) {
+                            duplicateCount++;
+                        }
+                    }
+                    
+                    // الكشف عن التكرار في الطلبات الموجودة
+                    detectExistingDuplicates();
+                    
+                    // ترتيب الطلبات من الأحدث إلى الأقدم
+                    allOrders.sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0));
+                }
+                
+                stats.duplicate = duplicateCount;
+                displayOrders(allOrders);
+                updateStats(stats);
+            });
+        }
+
+        // دالة الكشف عن التكرار في الطلبات الموجودة
+        function detectExistingDuplicates() {
+            const duplicatesMap = new Map();
+            
+            // إنشاء مفتوح فريد لكل طلب بناءً على البيانات
+            allOrders.forEach(order => {
+                const key = `${order.gender}_${order.birth}_${order.joinDate || 'nojoin'}_${order.category || 'nocat'}`;
+                
+                if (!duplicatesMap.has(key)) {
+                    duplicatesMap.set(key, []);
+                }
+                duplicatesMap.get(key).push(order);
+            });
+            
+            // تحديث علامات التكرار
+            duplicatesMap.forEach(orders => {
+                if (orders.length > 1) {
+                    orders.forEach(order => {
+                        order.hasDuplicates = true;
+                        order.duplicateGroup = orders.filter(o => o.id !== order.id);
+                    });
+                }
+            });
+        }
+
+        // دالة عرض الطلبات
+        function displayOrders(orders) {
+            const container = document.getElementById('orders-cards-container');
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            const filter = document.getElementById('filter-status').value;
+            
+            // تصفية الطلبات
+            let filteredOrders = orders.filter(o => {
+                if (currentUser.role !== 'admin' && o.sender !== currentUser.name) return false;
+                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm)) return false;
+                if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
+                if (filter && filter !== 'duplicate' && o.status !== filter) return false;
+                return true;
+            });
+            
+            if (filteredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
+                        <p class="text-lg font-medium">لا توجد طلبات لعرضها</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let cardsHTML = '';
+            filteredOrders.forEach((order) => {
+                const isDuplicate = order.isDuplicate || order.hasDuplicates;
+                const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
+                const duplicateClass = isDuplicate ? 'duplicate' : '';
+                
+                const statusBadge = order.status === 'مكتمل' 
+                    ? '<span class="badge badge-success"><i class="fas fa-check-circle ml-1"></i> مكتمل</span>'
+                    : '<span class="badge badge-warning"><i class="fas fa-clock ml-1"></i> قيد المراجعة</span>';
+                
+                const duplicateBadge = isDuplicate ? `
+                    <div class="duplicate-badge">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        مكرر
+                    </div>
+                ` : '';
+                
+                const categoryDisplay = order.category 
+                    ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">فئة ${order.category}</span>`
+                    : '<span class="text-gray-400">-</span>';
+                
+                const joinDateDisplay = order.joinDate 
+                    ? order.joinDate 
+                    : '<span class="text-gray-400">-</span>';
+                
+                const notesDisplay = order.notes 
+                    ? `<div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                          <span class="text-xs text-gray-500 font-medium">ملاحظات المرسل:</span>
+                          <p class="text-gray-700 text-sm mt-1">${order.notes}</p>
+                       </div>`
+                    : '';
+                
+                // معلومات التكرار
+                let duplicateInfo = '';
+                if (isDuplicate) {
+                    const duplicateMsg = order.isDuplicate 
+                        ? '<p class="text-red-600 text-sm font-bold mt-2"><i class="fas fa-exclamation-triangle ml-1"></i> تم إرسال هذا الطلب مع تحذير التكرار</p>'
+                        : '<p class="text-amber-600 text-sm font-bold mt-2"><i class="fas fa-clone ml-1"></i> هناك طلبات أخرى بنفس البيانات</p>';
+                    
+                    duplicateInfo = `
+                        <div class="mt-3 p-3 border border-red-200 rounded-lg bg-red-50">
+                            <p class="text-red-700 text-sm font-bold flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                تنبيه: بيانات مشابهة لطلبات سابقة
+                            </p>
+                            ${duplicateMsg}
+                        </div>
+                    `;
+                }
+                
+                let actionsHTML = '';
+                if (currentUser.role === 'admin') {
+                    actionsHTML = `
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="openReplyModal('${order.id}')" class="flex-1 btn btn-primary py-2 text-sm">
+                                <i class="fas fa-reply ml-1"></i> رد المسؤول
+                            </button>
+                            <button onclick="deleteOrder('${order.id}')" class="btn btn-danger px-4">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                } else if (order.sender === currentUser.name && order.status === "قيد المراجعة") {
+                    actionsHTML = `
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
+                                <i class="fas fa-trash ml-1"></i> حذف الطلب
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                cardsHTML += `
+                    <div class="order-card ${statusClass} ${duplicateClass}" data-id="${order.id}">
+                        ${duplicateBadge}
+                        
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800 text-lg">${order.subjectName}</h4>
+                                <p class="text-gray-600 text-sm mt-1">
+                                    <i class="far fa-user ml-1"></i> ${order.sender}
+                                </p>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                ${statusBadge}
+                                <span class="text-xs text-gray-500 mt-2">${order.timestamp}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="info-row">
+                                <span class="label">الجنس:</span>
+                                <span class="value">${order.gender || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">تاريخ الميلاد:</span>
+                                <span class="value">${order.birth || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">تاريخ الانتساب:</span>
+                                <span class="value">${joinDateDisplay}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">الفئة:</span>
+                                <span class="value">${categoryDisplay}</span>
+                            </div>
+                        </div>
+                        
+                        ${notesDisplay}
+                        ${duplicateInfo}
+                        
+                        <div class="mt-4 p-4 bg-blue-50 rounded-xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-blue-700">
+                                    <i class="fas fa-comment-dots ml-1"></i> رد المسؤول:
+                                </span>
+                                ${order.reply ? `
+                                    <button onclick="copyReply('${order.id}')" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700">
+                                        <i class="far fa-copy ml-1"></i> نسخ
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="reply-content">
+                                ${order.reply || 'بانتظار رد المسؤول...'}
+                            </div>
+                        </div>
+                        
+                        ${actionsHTML}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = cardsHTML;
+            
+            // تحديث عداد الطلبات المكررة
+            updateDuplicateCounter();
+        }
+
+        // دالة تحديث عداد الطلبات المكررة
+        function updateDuplicateCounter() {
+            if (duplicateCount > 0) {
+                document.getElementById('duplicate-count').classList.remove('hidden');
+                document.getElementById('duplicate-number').innerText = duplicateCount;
+            } else {
+                document.getElementById('duplicate-count').classList.add('hidden');
+            }
+        }
+
+        // دالة إعداد البحث والتصفية
+        function setupSearchAndFilter() {
+            const searchBox = document.getElementById('search-box');
+            const filterStatus = document.getElementById('filter-status');
+            
+            searchBox.addEventListener('input', () => displayOrders(allOrders));
+            filterStatus.addEventListener('change', () => displayOrders(allOrders));
+        }
+
+        // دالة تحديث الإحصائيات
+        function updateStats(stats) {
+            if (currentUser.role === 'admin') {
+                document.getElementById('stat-total').innerText = stats.total;
+                document.getElementById('stat-pending').innerText = stats.pending;
+                document.getElementById('stat-done').innerText = stats.done;
+                document.getElementById('stat-duplicate').innerText = stats.duplicate;
+            }
+        }
+
+        // باقي الدوال المطلوبة
+        window.copyReply = function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order || !order.reply) return;
+            
+            navigator.clipboard.writeText(order.reply)
+                .then(() => alert("تم نسخ الرد بنجاح"))
+                .catch(() => alert("حدث خطأ في النسخ"));
+        };
+
+        window.openReplyModal = function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            selectedOrderId = orderId;
+            
+            document.getElementById('modal-title').innerText = 'رد على الطلب';
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">الطلب المقدم من:</p>
+                        <p class="font-bold text-lg">${order.sender}</p>
+                        <div class="grid grid-cols-2 gap-4 mt-3">
+                            <div>
+                                <p class="text-sm text-gray-600">صاحب الطلب:</p>
+                                <p class="font-medium">${order.subjectName || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">تاريخ الميلاد:</p>
+                                <p class="font-medium">${order.birth || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-edit ml-1"></i> رد المسؤول
+                        </label>
+                        <textarea 
+                            id="admin-reply-text" 
+                            rows="6" 
+                            class="w-full p-3"
+                            placeholder="اكتب الرد هنا..."
+                        >${order.reply || ''}</textarea>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal-reply').classList.remove('hidden');
+            document.getElementById('admin-reply-text').focus();
+        };
+
+        window.saveReply = function() {
+            const reply = document.getElementById('admin-reply-text').value.trim();
+            if (!reply) {
+                alert("يرجى كتابة الرد أولاً");
+                return;
+            }
+            
+            update(ref(db, 'orders/' + selectedOrderId), {
+                reply: reply,
+                status: "مكتمل",
+                replyTimestamp: new Date().toLocaleString('ar-EG')
+            })
+            .then(() => {
+                alert("✅ تم إرسال الرد بنجاح");
+                closeModal();
+                fetchOrders();
+            })
+            .catch(error => alert("حدث خطأ: " + error.message));
+        };
+
+        window.deleteOrder = function(orderId) {
+            if (!confirm("هل أنت متأكد من حذف هذا الطلب؟")) return;
+            
+            remove(ref(db, 'orders/' + orderId))
+                .then(() => {
+                    alert("✅ تم الحذف بنجاح");
+                    fetchOrders();
+                })
+                .catch(error => alert("حدث خطأ: " + error.message));
+        };
+
+        window.closeModal = function() {
+            document.getElementById('modal-reply').classList.add('hidden');
+            selectedOrderId = '';
+        };
+
+        window.logout = function() {
+            localStorage.clear();
+            location.reload();
+        };
+
+        // التحقق من الجلسة الحالية
+        const session = localStorage.getItem('user_session');
+        if (session) {
+            const sessionData = JSON.parse(session);
+            currentUser = { name: sessionData.name, role: sessionData.role };
+            showDashboard();
+        }
+
+        // تقييد إدخال كلمة المرور لأرقام فقط
+        document.getElementById('login-pass').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>
