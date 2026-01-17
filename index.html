@@ -180,6 +180,20 @@
             border: 1px solid #e2e8f0;
         }
         
+        /* ملاحظات المسؤول */
+        .admin-notes-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-size: 14px;
+            color: #7c3aed;
+            font-weight: 700;
+            background: #f5f3ff;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #ddd6fe;
+        }
+        
         /* البادجات */
         .badge {
             display: inline-flex;
@@ -252,6 +266,27 @@
         .btn-danger:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+        
+        /* زر الإشعارات */
+        .notifications-btn {
+            position: relative;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
         }
         
         /* تصميم متجاوب */
@@ -327,12 +362,38 @@
                     </div>
                 </div>
                 
-                <button 
-                    onclick="logout()" 
-                    class="btn btn-danger px-6"
-                >
-                    <i class="fas fa-sign-out-alt"></i> خروج
-                </button>
+                <div class="flex items-center gap-3">
+                    <!-- زر الإشعارات -->
+                    <button 
+                        onclick="toggleNotifications()" 
+                        class="notifications-btn relative p-3 text-gray-600 hover:text-blue-600 transition-colors"
+                    >
+                        <i class="fas fa-bell text-xl"></i>
+                        <span id="notification-badge" class="notification-badge hidden">0</span>
+                    </button>
+                    
+                    <!-- قائمة الإشعارات -->
+                    <div id="notifications-dropdown" class="hidden absolute top-20 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                        <div class="p-4 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-gray-800">الإشعارات</h3>
+                                <button onclick="markAllNotificationsAsRead()" class="text-sm text-blue-600 hover:text-blue-800">
+                                    تعيين الكل كمقروء
+                                </button>
+                            </div>
+                        </div>
+                        <div id="notifications-list" class="p-2">
+                            <!-- سيتم تعبئة الإشعارات هنا ديناميكياً -->
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onclick="logout()" 
+                        class="btn btn-danger px-6"
+                    >
+                        <i class="fas fa-sign-out-alt"></i> خروج
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -693,13 +754,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // إضافة المستخدم الجديد: صفحة التقاعد الاختياري
         const usersMap = {
             "0780": { name: "المسؤول العام", role: "admin" },
             "2004": { name: "مهدي أحمد", role: "user" },
             "1982": { name: "مهند علي (أبو سيف)", role: "user" },
             "2001": { name: "مهدي (د. إيهاب)", role: "user" },
             "1996": { name: "حيدر الكرعاوي", role: "user" },
-            "1234": { name: "مستخدم تجريبي", role: "user" }
+            "1234": { name: "مستخدم تجريبي", role: "user" },
+            "2026": { name: "صفحة التقاعد الاختياري", role: "user" } // المستخدم الجديد
         };
 
         let currentUser = null;
@@ -708,6 +771,7 @@
         let currentNewOrderData = null;
         let duplicateOrders = [];
         let duplicateCount = 0;
+        let notifications = [];
 
         // دالة تسجيل الدخول
         window.handleLogin = function() {
@@ -723,6 +787,12 @@
                 localStorage.setItem('user_session', JSON.stringify(sessionData));
                 
                 showDashboard();
+                fetchNotifications();
+                
+                // طلب إذن الإشعارات من المتصفح
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
             } else {
                 alert("رمز الدخول غير صحيح!");
             }
@@ -758,6 +828,222 @@
         // دالة تحديث الطلبات
         window.refreshOrders = function() {
             fetchOrders();
+            fetchNotifications();
+        }
+
+        // دالة جلب الإشعارات
+        function fetchNotifications() {
+            if (!currentUser) return;
+            
+            onValue(ref(db, 'notifications'), (snapshot) => {
+                const data = snapshot.val();
+                notifications = [];
+                
+                if (data) {
+                    for (let id in data) {
+                        const notif = { id, ...data[id] };
+                        
+                        // عرض الإشعارات للمستخدم المناسب
+                        if (currentUser.role === 'admin' || 
+                            (notif.targetUser === currentUser.name && !notif.read)) {
+                            notifications.push(notif);
+                        }
+                    }
+                }
+                
+                updateNotificationsUI();
+            });
+        }
+
+        // دالة تحديث واجهة الإشعارات
+        function updateNotificationsUI() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-badge');
+            
+            if (unreadCount > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+            } else {
+                badge.classList.add('hidden');
+            }
+            
+            // إظهار إشعارات المتصفح للطلبات الجديدة
+            showBrowserNotifications();
+        }
+
+        // دالة عرض إشعارات المتصفح
+        function showBrowserNotifications() {
+            if (!("Notification" in window)) return;
+            
+            const newNotifications = notifications.filter(n => 
+                !n.read && 
+                (n.type === 'new_order' || n.type === 'order_replied' || n.type === 'order_completed')
+            );
+            
+            newNotifications.forEach(notif => {
+                if (Notification.permission === "granted") {
+                    let title, body;
+                    
+                    switch(notif.type) {
+                        case 'new_order':
+                            title = '📋 طلب جديد';
+                            body = `طلب جديد من ${notif.sender}`;
+                            break;
+                        case 'order_replied':
+                            title = '💬 رد على طلبك';
+                            body = `تم الرد على طلبك من قبل المسؤول`;
+                            break;
+                        case 'order_completed':
+                            title = '✅ اكتمال الطلب';
+                            body = `تم إكمال طلبك بنجاح`;
+                            break;
+                    }
+                    
+                    new Notification(title, {
+                        body: body,
+                        icon: '/icon.png',
+                        tag: notif.id
+                    });
+                }
+                
+                // تحديث حالة الإشعار كمقروء
+                if (!notif.read) {
+                    update(ref(db, 'notifications/' + notif.id), { read: true });
+                }
+            });
+        }
+
+        // دالة تبديل عرض الإشعارات
+        window.toggleNotifications = function() {
+            const dropdown = document.getElementById('notifications-dropdown');
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                displayNotificationsList();
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        // دالة عرض قائمة الإشعارات
+        function displayNotificationsList() {
+            const listContainer = document.getElementById('notifications-list');
+            
+            if (notifications.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-bell-slash text-3xl mb-3"></i>
+                        <p>لا توجد إشعارات</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // ترتيب الإشعارات من الأحدث إلى الأقدم
+            const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
+            
+            let listHTML = '';
+            sortedNotifications.forEach(notif => {
+                const timeAgo = getTimeAgo(notif.timestamp);
+                const isReadClass = notif.read ? 'opacity-70' : 'bg-blue-50';
+                
+                let icon, color, text;
+                
+                switch(notif.type) {
+                    case 'new_order':
+                        icon = 'fa-file-alt';
+                        color = 'text-blue-600';
+                        text = `طلب جديد من ${notif.sender}`;
+                        break;
+                    case 'order_replied':
+                        icon = 'fa-reply';
+                        color = 'text-green-600';
+                        text = `رد المسؤول على طلبك`;
+                        break;
+                    case 'order_completed':
+                        icon = 'fa-check-circle';
+                        color = 'text-emerald-600';
+                        text = `تم إكمال طلبك`;
+                        break;
+                    case 'duplicate_warning':
+                        icon = 'fa-exclamation-triangle';
+                        color = 'text-red-600';
+                        text = `تنبيه: طلب مكرر من ${notif.sender}`;
+                        break;
+                    default:
+                        icon = 'fa-bell';
+                        color = 'text-gray-600';
+                        text = notif.message || 'إشعار جديد';
+                }
+                
+                listHTML += `
+                    <div class="notification-item p-3 border-b border-gray-100 hover:bg-gray-50 ${isReadClass}" onclick="markNotificationAsRead('${notif.id}')">
+                        <div class="flex items-start gap-3">
+                            <div class="${color}">
+                                <i class="fas ${icon} text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">${text}</p>
+                                ${notif.orderSubject ? `
+                                    <p class="text-xs text-gray-600 mt-1">الطلب: ${notif.orderSubject}</p>
+                                ` : ''}
+                                <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                            </div>
+                            ${!notif.read ? `
+                                <span class="w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            listContainer.innerHTML = listHTML;
+        }
+
+        // دالة حساب الوقت المنقضي
+        function getTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (minutes < 1) return 'الآن';
+            if (minutes < 60) return `منذ ${minutes} دقيقة`;
+            if (hours < 24) return `منذ ${hours} ساعة`;
+            return `منذ ${days} يوم`;
+        }
+
+        // دالة تعيين إشعار كمقروء
+        window.markNotificationAsRead = function(notificationId) {
+            update(ref(db, 'notifications/' + notificationId), { read: true })
+                .then(() => {
+                    fetchNotifications();
+                });
+        }
+
+        // دالة تعيين جميع الإشعارات كمقروءة
+        window.markAllNotificationsAsRead = function() {
+            notifications.forEach(notif => {
+                if (!notif.read) {
+                    update(ref(db, 'notifications/' + notif.id), { read: true });
+                }
+            });
+        }
+
+        // دالة إرسال إشعار
+        function sendNotification(type, targetUser, sender, orderSubject = '', orderId = '') {
+            const notificationData = {
+                type: type,
+                targetUser: targetUser,
+                sender: sender,
+                orderSubject: orderSubject,
+                orderId: orderId,
+                timestamp: Date.now(),
+                read: false
+            };
+            
+            push(ref(db, 'notifications'), notificationData);
         }
 
         // دالة الكشف عن التكرار
@@ -839,6 +1125,7 @@
                 notes: notes,
                 status: "قيد المراجعة",
                 reply: "",
+                adminNotes: "", // حقل جديد لملاحظات المسؤول
                 timestamp: new Date().toLocaleString('ar-EG'),
                 timestampOrder: Date.now(),
                 senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
@@ -945,8 +1232,7 @@
 
         // دالة إرسال إشعار التكرار للمسؤولين
         function sendDuplicateNotificationToAdmins(newOrder, duplicates) {
-            // في نظام حقيقي، هنا نرسل إشعاراً للمسؤولين
-            // يمكن إضافة Firebase Cloud Messaging أو إرسال إشعار في قاعدة البيانات
+            sendNotification('duplicate_warning', 'المسؤول العام', currentUser.name, newOrder.subjectName);
             
             const notificationData = {
                 type: 'duplicate_warning',
@@ -980,6 +1266,9 @@
             try {
                 await push(ref(db, 'orders'), currentNewOrderData);
                 
+                // إرسال إشعار للمسؤول عن الطلب الجديد
+                sendNotification('new_order', 'المسؤول العام', currentUser.name, currentNewOrderData.subjectName);
+                
                 // إغلاق نافذة التنبيه
                 closeDuplicateAlert();
                 
@@ -1007,6 +1296,10 @@
             
             try {
                 await push(ref(db, 'orders'), orderData);
+                
+                // إرسال إشعار للمسؤول عن الطلب الجديد
+                sendNotification('new_order', 'المسؤول العام', currentUser.name, orderData.subjectName);
+                
                 alert("✅ تم إرسال الطلب بنجاح");
                 document.getElementById('request-form').reset();
                 fetchOrders();
@@ -1159,6 +1452,20 @@
                     `;
                 }
                 
+                // عرض ملاحظات المسؤول إن وجدت
+                const adminNotesDisplay = order.adminNotes ? `
+                    <div class="mt-4 p-4 bg-purple-50 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-purple-700">
+                                <i class="fas fa-sticky-note ml-1"></i> ملاحظات المسؤول:
+                            </span>
+                        </div>
+                        <div class="admin-notes-content">
+                            ${order.adminNotes}
+                        </div>
+                    </div>
+                ` : '';
+                
                 let actionsHTML = '';
                 if (currentUser.role === 'admin') {
                     actionsHTML = `
@@ -1236,6 +1543,8 @@
                             </div>
                         </div>
                         
+                        ${adminNotesDisplay}
+                        
                         ${actionsHTML}
                     </div>
                 `;
@@ -1276,7 +1585,7 @@
             }
         }
 
-        // باقي الدوال المطلوبة
+        // دالة نسخ الرد
         window.copyReply = function(orderId) {
             const order = allOrders.find(o => o.id === orderId);
             if (!order || !order.reply) return;
@@ -1286,6 +1595,7 @@
                 .catch(() => alert("حدث خطأ في النسخ"));
         };
 
+        // دالة فتح مودال رد المسؤول
         window.openReplyModal = function(orderId) {
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
@@ -1312,14 +1622,28 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-edit ml-1"></i> رد المسؤول
+                            <i class="fas fa-edit ml-1"></i> رد المسؤول *
                         </label>
                         <textarea 
                             id="admin-reply-text" 
-                            rows="6" 
+                            rows="4" 
                             class="w-full p-3"
-                            placeholder="اكتب الرد هنا..."
+                            placeholder="اكتب الرد الرسمي هنا..."
+                            required
                         >${order.reply || ''}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sticky-note ml-1"></i> ملاحظات المسؤول
+                            <span class="text-gray-400 text-xs">(اختياري)</span>
+                        </label>
+                        <textarea 
+                            id="admin-notes-text" 
+                            rows="3" 
+                            class="w-full p-3"
+                            placeholder="ملاحظات إضافية خاصة..."
+                        >${order.adminNotes || ''}</textarea>
                     </div>
                 </div>
             `;
@@ -1328,19 +1652,36 @@
             document.getElementById('admin-reply-text').focus();
         };
 
+        // دالة حفظ رد المسؤول
         window.saveReply = function() {
             const reply = document.getElementById('admin-reply-text').value.trim();
+            const adminNotes = document.getElementById('admin-notes-text').value.trim();
+            
             if (!reply) {
-                alert("يرجى كتابة الرد أولاً");
+                alert("يرجى كتابة الرد الرسمي أولاً");
                 return;
             }
             
-            update(ref(db, 'orders/' + selectedOrderId), {
+            const order = allOrders.find(o => o.id === selectedOrderId);
+            const updates = {
                 reply: reply,
                 status: "مكتمل",
                 replyTimestamp: new Date().toLocaleString('ar-EG')
-            })
+            };
+            
+            // إضافة ملاحظات المسؤول إن وجدت
+            if (adminNotes) {
+                updates.adminNotes = adminNotes;
+            }
+            
+            update(ref(db, 'orders/' + selectedOrderId), updates)
             .then(() => {
+                // إرسال إشعار للمستخدم عن الرد
+                sendNotification('order_replied', order.sender, 'المسؤول العام', order.subjectName);
+                
+                // إرسال إشعار اكتمال الطلب
+                sendNotification('order_completed', order.sender, 'المسؤول العام', order.subjectName);
+                
                 alert("✅ تم إرسال الرد بنجاح");
                 closeModal();
                 fetchOrders();
@@ -1348,6 +1689,7 @@
             .catch(error => alert("حدث خطأ: " + error.message));
         };
 
+        // دالة حذف الطلب
         window.deleteOrder = function(orderId) {
             if (!confirm("هل أنت متأكد من حذف هذا الطلب؟")) return;
             
@@ -1359,11 +1701,13 @@
                 .catch(error => alert("حدث خطأ: " + error.message));
         };
 
+        // دالة إغلاق المودال
         window.closeModal = function() {
             document.getElementById('modal-reply').classList.add('hidden');
             selectedOrderId = '';
         };
 
+        // دالة تسجيل الخروج
         window.logout = function() {
             localStorage.clear();
             location.reload();
@@ -1380,6 +1724,18 @@
         // تقييد إدخال كلمة المرور لأرقام فقط
         document.getElementById('login-pass').addEventListener('input', function(e) {
             this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        // إغلاق قائمة الإشعارات عند النقر خارجها
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('notifications-dropdown');
+            const notificationsBtn = document.querySelector('.notifications-btn');
+            
+            if (dropdown && !dropdown.classList.contains('hidden') && 
+                !dropdown.contains(event.target) && 
+                !notificationsBtn.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
         });
     </script>
 </body>
