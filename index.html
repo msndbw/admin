@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>نظام إدارة الطلبات - كشف التكرار</title>
+    
+    <!-- Preconnect للتحسين -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         * { 
             font-family: 'Cairo', sans-serif; 
@@ -289,6 +295,45 @@
             font-weight: bold;
         }
         
+        /* سجل الحالة */
+        .timeline {
+            position: relative;
+            padding-right: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            right: -30px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        
+        .timeline-item.received::before { background: #10b981; }
+        .timeline-item.viewed::before { background: #f59e0b; }
+        .timeline-item.replied::before { background: #8b5cf6; }
+        .timeline-item.completed::before { background: #06b6d4; }
+        
         /* تصميم متجاوب */
         @media (max-width: 640px) {
             .modal-content {
@@ -300,6 +345,94 @@
                 padding: 20px;
                 border-radius: 20px;
             }
+            
+            /* تحسين اللمس للأجهزة المحمولة */
+            .btn, input, select, textarea {
+                min-height: 48px;
+            }
+            
+            .order-card {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+        }
+        
+        /* Loader عام */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(3px);
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 15px;
+        }
+        
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .page-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .page-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Infinite scroll indicator */
+        .infinite-scroll-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+        }
+        
+        /* Info rows */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .info-row .label {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .info-row .value {
+            font-weight: 600;
+            color: #1e293b;
         }
     </style>
 </head>
@@ -663,15 +796,26 @@
                         <p>جاري تحميل الطلبات...</p>
                     </div>
                 </div>
+                
+                <!-- Pagination -->
+                <div id="pagination-container" class="hidden pagination">
+                    <!-- سيتم تعبئته ديناميكياً -->
+                </div>
+                
+                <!-- Infinite scroll indicator -->
+                <div id="infinite-scroll-indicator" class="infinite-scroll-indicator hidden">
+                    <i class="fas fa-spinner fa-spin text-blue-600 mr-2"></i>
+                    جاري تحميل المزيد...
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- مودال رد المسؤول -->
+    <!-- مودال رد المسؤول مع سجل الحالة -->
     <div id="modal-reply" class="modal-backdrop hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-gray-800" id="modal-title">رد على الطلب</h3>
+                <h3 class="text-xl font-bold text-gray-800" id="modal-title">رد على الطلب مع سجل الحالة</h3>
                 <button 
                     onclick="closeModal()" 
                     class="text-gray-400 hover:text-gray-600 text-2xl"
@@ -680,7 +824,7 @@
                 </button>
             </div>
             
-            <div id="modal-content" class="space-y-4">
+            <div id="modal-content" class="space-y-6">
                 <!-- سيتم تعبئة المحتوى ديناميكياً -->
             </div>
             
@@ -696,7 +840,7 @@
                     onclick="saveReply()" 
                     class="flex-1 btn btn-primary py-3"
                 >
-                    <i class="fas fa-check ml-2"></i> حفظ الرد
+                    <i class="fas fa-check ml-2"></i> حفظ الرد وتحديث الحالة
                 </button>
             </div>
         </div>
@@ -737,9 +881,30 @@
         </div>
     </div>
 
+    <!-- Loader عام -->
+    <div id="global-loader" class="hidden">
+        <div class="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+            <p class="font-medium text-gray-700">جاري التحميل...</p>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onValue, 
+            update, 
+            remove,
+            query,
+            orderByChild,
+            limitToLast,
+            limitToFirst,
+            startAt,
+            endAt
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOzouJz7ROysGrL2KoS6GPU046Mfq5EKg",
@@ -754,7 +919,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // إضافة المستخدم الجديد: صفحة التقاعد الاختياري
+        // تعريف المستخدمين
         const usersMap = {
             "0780": { name: "المسؤول العام", role: "admin" },
             "2004": { name: "مهدي أحمد", role: "user" },
@@ -762,34 +927,63 @@
             "2001": { name: "مهدي (د. إيهاب)", role: "user" },
             "1996": { name: "حيدر الكرعاوي", role: "user" },
             "1234": { name: "مستخدم تجريبي", role: "user" },
-            "2026": { name: "صفحة التقاعد الاختياري", role: "user" } // المستخدم الجديد
+            "2026": { name: "صفحة التقاعد الاختياري", role: "user" }
         };
 
-        let currentUser = null;
-        let allOrders = [];
-        let selectedOrderId = '';
-        let currentNewOrderData = null;
-        let duplicateOrders = [];
-        let duplicateCount = 0;
-        let notifications = [];
+        // حالة التطبيق
+        const appState = {
+            currentUser: null,
+            allOrders: [],
+            filteredOrders: [],
+            displayedOrders: [],
+            selectedOrderId: '',
+            currentNewOrderData: null,
+            duplicateOrders: [],
+            duplicateCount: 0,
+            notifications: [],
+            filters: {
+                search: '',
+                status: '',
+                page: 1
+            },
+            pagination: {
+                page: 1,
+                totalPages: 1,
+                ordersPerPage: 20,
+                totalOrders: 0,
+                isLoadingMore: false,
+                hasMore: true
+            },
+            performanceMetrics: {
+                duplicateCheckTime: 0,
+                searchTime: 0,
+                renderTime: 0
+            }
+        };
+
+        // كائن لتحسين الكشف عن التكرار
+        const seenCombinations = new Map();
 
         // دالة تسجيل الدخول
         window.handleLogin = function() {
             const pass = document.getElementById('login-pass').value.trim();
             if (usersMap[pass]) {
-                currentUser = usersMap[pass];
+                appState.currentUser = usersMap[pass];
                 
                 // حفظ بيانات الجلسة
                 const sessionData = {
-                    ...currentUser,
+                    ...appState.currentUser,
                     loginTime: new Date().toISOString()
                 };
                 localStorage.setItem('user_session', JSON.stringify(sessionData));
                 
+                // إعادة تحميل البيانات المخبأة
+                loadCachedData();
+                
                 showDashboard();
                 fetchNotifications();
                 
-                // طلب إذن الإشعارات من المتصفح
+                // طلب إذن الإشعارات
                 if (Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
@@ -798,22 +992,59 @@
             }
         }
 
+        // دالة تحميل البيانات المخبأة
+        function loadCachedData() {
+            const cached = localStorage.getItem('cached_orders');
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 دقائق
+                    appState.allOrders = data;
+                    appState.pagination.totalOrders = data.length;
+                    updateDisplayedOrders();
+                }
+            }
+        }
+
+        // دالة حفظ البيانات مخبأة
+        function cacheOrders(orders) {
+            try {
+                localStorage.setItem('cached_orders', 
+                    JSON.stringify({
+                        data: orders,
+                        timestamp: Date.now()
+                    })
+                );
+            } catch (e) {
+                console.warn('Cache failed:', e);
+            }
+        }
+
+        // دالة قياس الأداء
+        function measurePerformance(name, operation) {
+            const start = performance.now();
+            const result = operation();
+            const end = performance.now();
+            appState.performanceMetrics[name] = (end - start).toFixed(2);
+            console.log(`${name}: ${appState.performanceMetrics[name]}ms`);
+            return result;
+        }
+
         // دالة عرض لوحة التحكم
         function showDashboard() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             
             // تحديث معلومات المستخدم
-            document.getElementById('user-display-name').innerText = currentUser.name;
+            document.getElementById('user-display-name').innerText = appState.currentUser.name;
             
             const roleBadge = document.getElementById('user-role-badge');
-            roleBadge.innerText = currentUser.role === 'admin' ? "مدير النظام" : "مستخدم";
-            roleBadge.className = currentUser.role === 'admin' 
+            roleBadge.innerText = appState.currentUser.role === 'admin' ? "مدير النظام" : "مستخدم";
+            roleBadge.className = appState.currentUser.role === 'admin' 
                 ? 'badge badge-success' 
                 : 'badge badge-info';
             
             // إظهار الأقسام المناسبة
-            if (currentUser.role === 'admin') {
+            if (appState.currentUser.role === 'admin') {
                 document.getElementById('admin-stats').classList.remove('hidden');
                 document.getElementById('user-section').classList.add('hidden');
             } else {
@@ -823,30 +1054,41 @@
             
             fetchOrders();
             setupSearchAndFilter();
+            setupInfiniteScroll();
         }
 
         // دالة تحديث الطلبات
         window.refreshOrders = function() {
+            showLoader(true);
             fetchOrders();
             fetchNotifications();
         }
 
+        // دالة إظهار/إخفاء اللودر
+        function showLoader(show) {
+            const loader = document.getElementById('global-loader');
+            if (show) {
+                loader.classList.remove('hidden');
+            } else {
+                loader.classList.add('hidden');
+            }
+        }
+
         // دالة جلب الإشعارات
         function fetchNotifications() {
-            if (!currentUser) return;
+            if (!appState.currentUser) return;
             
             onValue(ref(db, 'notifications'), (snapshot) => {
                 const data = snapshot.val();
-                notifications = [];
+                appState.notifications = [];
                 
                 if (data) {
                     for (let id in data) {
                         const notif = { id, ...data[id] };
                         
-                        // عرض الإشعارات للمستخدم المناسب
-                        if (currentUser.role === 'admin' || 
-                            (notif.targetUser === currentUser.name && !notif.read)) {
-                            notifications.push(notif);
+                        if (appState.currentUser.role === 'admin' || 
+                            (notif.targetUser === appState.currentUser.name && !notif.read)) {
+                            appState.notifications.push(notif);
                         }
                     }
                 }
@@ -857,7 +1099,7 @@
 
         // دالة تحديث واجهة الإشعارات
         function updateNotificationsUI() {
-            const unreadCount = notifications.filter(n => !n.read).length;
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
             const badge = document.getElementById('notification-badge');
             
             if (unreadCount > 0) {
@@ -867,7 +1109,6 @@
                 badge.classList.add('hidden');
             }
             
-            // إظهار إشعارات المتصفح للطلبات الجديدة
             showBrowserNotifications();
         }
 
@@ -875,7 +1116,7 @@
         function showBrowserNotifications() {
             if (!("Notification" in window)) return;
             
-            const newNotifications = notifications.filter(n => 
+            const newNotifications = appState.notifications.filter(n => 
                 !n.read && 
                 (n.type === 'new_order' || n.type === 'order_replied' || n.type === 'order_completed')
             );
@@ -906,7 +1147,6 @@
                     });
                 }
                 
-                // تحديث حالة الإشعار كمقروء
                 if (!notif.read) {
                     update(ref(db, 'notifications/' + notif.id), { read: true });
                 }
@@ -928,7 +1168,7 @@
         function displayNotificationsList() {
             const listContainer = document.getElementById('notifications-list');
             
-            if (notifications.length === 0) {
+            if (appState.notifications.length === 0) {
                 listContainer.innerHTML = `
                     <div class="text-center py-8 text-gray-500">
                         <i class="fas fa-bell-slash text-3xl mb-3"></i>
@@ -938,8 +1178,7 @@
                 return;
             }
             
-            // ترتيب الإشعارات من الأحدث إلى الأقدم
-            const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
+            const sortedNotifications = [...appState.notifications].sort((a, b) => b.timestamp - a.timestamp);
             
             let listHTML = '';
             sortedNotifications.forEach(notif => {
@@ -1024,7 +1263,7 @@
 
         // دالة تعيين جميع الإشعارات كمقروءة
         window.markAllNotificationsAsRead = function() {
-            notifications.forEach(notif => {
+            appState.notifications.forEach(notif => {
                 if (!notif.read) {
                     update(ref(db, 'notifications/' + notif.id), { read: true });
                 }
@@ -1046,69 +1285,48 @@
             push(ref(db, 'notifications'), notificationData);
         }
 
-        // دالة الكشف عن التكرار
-        function checkForDuplicates(newOrder) {
-            duplicateOrders = [];
-            
-            allOrders.forEach(existingOrder => {
-                // مقارنة الجنس
-                const genderMatch = newOrder.gender === existingOrder.gender;
+        // دالة إنشاء مفتاح للطلب
+        function generateOrderKey(order) {
+            return `${order.gender}_${order.birth}_${order.joinDate || ''}_${order.category || ''}`;
+        }
+
+        // دالة كشف التكرار المحسنة
+        function checkForDuplicatesEfficiently(newOrder) {
+            return measurePerformance('duplicateCheck', () => {
+                const key = generateOrderKey(newOrder);
+                const now = Date.now();
                 
-                // مقارنة تاريخ الميلاد
-                const birthMatch = newOrder.birth === existingOrder.birth;
-                
-                // مقارنة تاريخ الانتساب (إذا كان موجوداً في كلا الطلبين)
-                let joinMatch = false;
-                if (newOrder.joinDate && existingOrder.joinDate) {
-                    joinMatch = newOrder.joinDate === existingOrder.joinDate;
-                } else if (!newOrder.joinDate && !existingOrder.joinDate) {
-                    joinMatch = true; // كلاهما فارغ
-                } else if (!newOrder.joinDate || !existingOrder.joinDate) {
-                    joinMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
+                if (seenCombinations.has(key)) {
+                    const existingOrders = seenCombinations.get(key);
+                    return existingOrders.filter(order => 
+                        Math.abs(order.timestampOrder - now) > 24 * 60 * 60 * 1000
+                    );
                 }
-                
-                // مقارنة الفئة (إذا كانت موجودة في كلا الطلبين)
-                let categoryMatch = false;
-                if (newOrder.category && existingOrder.category) {
-                    categoryMatch = newOrder.category === existingOrder.category;
-                } else if (!newOrder.category && !existingOrder.category) {
-                    categoryMatch = true; // كلاهما فارغ
-                } else if (!newOrder.category || !existingOrder.category) {
-                    categoryMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
-                }
-                
-                // إذا كان هناك تطابق في جميع الحقول المطلوبة
-                if (genderMatch && birthMatch && joinMatch && categoryMatch) {
-                    duplicateOrders.push(existingOrder);
-                }
+                return [];
             });
-            
-            return duplicateOrders.length > 0;
         }
 
         // دالة إرسال الطلب الجديد مع فحص التكرار
         document.getElementById('request-form').onsubmit = async (e) => {
             e.preventDefault();
             
-            // جمع البيانات من النموذج
-            const gender = document.getElementById('gender').value;
-            const subjectName = document.getElementById('subject-name').value.trim();
-            const category = document.getElementById('category').value;
+            // التحقق من صحة البيانات المدخلة
+            const gender = sanitizeInput(document.getElementById('gender').value);
+            const subjectName = sanitizeInput(document.getElementById('subject-name').value.trim());
+            const category = sanitizeInput(document.getElementById('category').value);
             const bDay = document.getElementById('b-day').value;
             const bMonth = document.getElementById('b-month').value;
             const bYear = document.getElementById('b-year').value;
             const jDay = document.getElementById('j-day').value;
             const jMonth = document.getElementById('j-month').value;
             const jYear = document.getElementById('j-year').value;
-            const notes = document.getElementById('notes').value.trim();
+            const notes = sanitizeInput(document.getElementById('notes').value.trim());
             
-            // التحقق من الحقول المطلوبة
             if (!gender || !subjectName || !bDay || !bMonth || !bYear) {
                 alert("الرجاء ملء جميع الحقول المطلوبة (*)");
                 return;
             }
             
-            // إعداد بيانات الطلب الجديد
             const birthDate = `${bDay}/${bMonth}/${bYear}`;
             let joinDate = '';
             if (jDay && jMonth && jYear) {
@@ -1116,7 +1334,7 @@
             }
             
             const newOrderData = {
-                sender: currentUser.name,
+                sender: appState.currentUser.name,
                 gender: gender,
                 subjectName: subjectName,
                 category: category || '',
@@ -1125,26 +1343,38 @@
                 notes: notes,
                 status: "قيد المراجعة",
                 reply: "",
-                adminNotes: "", // حقل جديد لملاحظات المسؤول
+                adminNotes: "",
+                statusHistory: [{
+                    status: "تم الاستلام",
+                    timestamp: Date.now(),
+                    user: appState.currentUser.name
+                }],
                 timestamp: new Date().toLocaleString('ar-EG'),
                 timestampOrder: Date.now(),
-                senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
+                senderId: appState.currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
             };
             
-            // حفظ بيانات الطلب الحالية لاستخدامها لاحقاً
-            currentNewOrderData = newOrderData;
+            appState.currentNewOrderData = newOrderData;
             
-            // فحص التكرار
-            const hasDuplicates = checkForDuplicates(newOrderData);
+            // فحص التكرار بكفاءة
+            const duplicates = checkForDuplicatesEfficiently(newOrderData);
             
-            if (hasDuplicates) {
-                // عرض نافذة التنبيه
-                showDuplicateAlert(duplicateOrders, newOrderData);
+            if (duplicates.length > 0) {
+                appState.duplicateOrders = duplicates;
+                showDuplicateAlert(duplicates, newOrderData);
             } else {
-                // لا يوجد تكرار، المتابعة في الإرسال العادي
                 submitOrder(newOrderData);
             }
         };
+
+        // دالة تحسين الأمان للمدخلات
+        function sanitizeInput(input) {
+            if (!input) return '';
+            return input
+                .replace(/[<>]/g, '')
+                .trim()
+                .substring(0, 1000);
+        }
 
         // دالة عرض تنبيه التكرار
         function showDuplicateAlert(duplicates, newOrder) {
@@ -1224,15 +1454,14 @@
             document.getElementById('duplicate-alert-content').innerHTML = alertContent;
             document.getElementById('duplicate-alert').classList.remove('hidden');
             
-            // إرسال إشعار للمسؤولين إذا كان المستخدم ليس مسؤول
-            if (currentUser.role !== 'admin') {
+            if (appState.currentUser.role !== 'admin') {
                 sendDuplicateNotificationToAdmins(newOrder, duplicates);
             }
         }
 
         // دالة إرسال إشعار التكرار للمسؤولين
         function sendDuplicateNotificationToAdmins(newOrder, duplicates) {
-            sendNotification('duplicate_warning', 'المسؤول العام', currentUser.name, newOrder.subjectName);
+            sendNotification('duplicate_warning', 'المسؤول العام', appState.currentUser.name, newOrder.subjectName);
             
             const notificationData = {
                 type: 'duplicate_warning',
@@ -1242,7 +1471,6 @@
                 notifiedAdmins: true
             };
             
-            // تخزين الإشعار في قاعدة البيانات للمسؤولين
             try {
                 push(ref(db, 'notifications'), notificationData);
             } catch (error) {
@@ -1252,33 +1480,27 @@
 
         // دالة الإرسال القسري (مع التحذير)
         window.forceSubmitOrder = async function() {
-            if (!currentNewOrderData) return;
+            if (!appState.currentNewOrderData) return;
             
             const btn = document.getElementById('force-submit-btn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
             
-            // إضافة علامة أن الطلب مكرر
-            currentNewOrderData.isDuplicate = true;
-            currentNewOrderData.duplicateWarning = `⚠️ تنبيه: هذا الطلب مكرر ${duplicateOrders.length} مرة سابقة`;
-            currentNewOrderData.duplicateReferences = duplicateOrders.map(d => d.id);
+            appState.currentNewOrderData.isDuplicate = true;
+            appState.currentNewOrderData.duplicateWarning = `⚠️ تنبيه: هذا الطلب مكرر ${appState.duplicateOrders.length} مرة سابقة`;
+            appState.currentNewOrderData.duplicateReferences = appState.duplicateOrders.map(d => d.id);
             
             try {
-                await push(ref(db, 'orders'), currentNewOrderData);
+                await push(ref(db, 'orders'), appState.currentNewOrderData);
                 
-                // إرسال إشعار للمسؤول عن الطلب الجديد
-                sendNotification('new_order', 'المسؤول العام', currentUser.name, currentNewOrderData.subjectName);
+                sendNotification('new_order', 'المسؤول العام', appState.currentUser.name, appState.currentNewOrderData.subjectName);
                 
-                // إغلاق نافذة التنبيه
                 closeDuplicateAlert();
                 
-                // إظهار رسالة نجاح
-                alert(`✅ تم إرسال الطلب مع التحذير\nتم اكتشاف ${duplicateOrders.length} طلب مكرر سابقاً`);
+                alert(`✅ تم إرسال الطلب مع التحذير\nتم اكتشاف ${appState.duplicateOrders.length} طلب مكرر سابقاً`);
                 
-                // إعادة تعيين النموذج
                 document.getElementById('request-form').reset();
                 
-                // تحديث قائمة الطلبات
                 fetchOrders();
             } catch (error) {
                 alert("حدث خطأ في إرسال الطلب: " + error.message);
@@ -1288,7 +1510,7 @@
             }
         };
 
-        // دالة الإرسال العادي (بدون تكرار)
+        // دالة الإرسال العادي
         async function submitOrder(orderData) {
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
@@ -1297,8 +1519,7 @@
             try {
                 await push(ref(db, 'orders'), orderData);
                 
-                // إرسال إشعار للمسؤول عن الطلب الجديد
-                sendNotification('new_order', 'المسؤول العام', currentUser.name, orderData.subjectName);
+                sendNotification('new_order', 'المسؤول العام', appState.currentUser.name, orderData.subjectName);
                 
                 alert("✅ تم إرسال الطلب بنجاح");
                 document.getElementById('request-form').reset();
@@ -1314,50 +1535,94 @@
         // دالة إغلاق نافذة التنبيه
         window.closeDuplicateAlert = function() {
             document.getElementById('duplicate-alert').classList.add('hidden');
-            currentNewOrderData = null;
-            duplicateOrders = [];
+            appState.currentNewOrderData = null;
+            appState.duplicateOrders = [];
         };
 
-        // دالة جلب الطلبات
+        // دالة جلب الطلبات مع Pagination
         function fetchOrders() {
+            showLoader(true);
+            
             onValue(ref(db, 'orders'), (snapshot) => {
                 const data = snapshot.val();
-                allOrders = [];
-                duplicateCount = 0;
+                appState.allOrders = [];
+                appState.duplicateCount = 0;
                 let stats = { total: 0, pending: 0, done: 0, duplicate: 0 };
+                
+                seenCombinations.clear();
                 
                 if (data) {
                     for (let id in data) {
                         const order = { id, ...data[id] };
-                        allOrders.push(order);
+                        appState.allOrders.push(order);
                         stats.total++;
                         if (order.status === "قيد المراجعة") stats.pending++; else stats.done++;
                         
-                        // حساب الطلبات المكررة
+                        // تحديث خريطة التكرار
+                        const key = generateOrderKey(order);
+                        if (!seenCombinations.has(key)) {
+                            seenCombinations.set(key, []);
+                        }
+                        seenCombinations.get(key).push(order);
+                        
                         if (order.isDuplicate) {
-                            duplicateCount++;
+                            appState.duplicateCount++;
                         }
                     }
                     
-                    // الكشف عن التكرار في الطلبات الموجودة
+                    // تحديث إحصائيات التكرار
                     detectExistingDuplicates();
                     
-                    // ترتيب الطلبات من الأحدث إلى الأقدم
-                    allOrders.sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0));
+                    // ترتيب الطلبات
+                    appState.allOrders.sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0));
+                    
+                    // حفظ مخبأ
+                    cacheOrders(appState.allOrders);
                 }
                 
-                stats.duplicate = duplicateCount;
-                displayOrders(allOrders);
+                stats.duplicate = appState.duplicateCount;
+                appState.pagination.totalOrders = appState.allOrders.length;
+                appState.pagination.totalPages = Math.ceil(appState.allOrders.length / appState.pagination.ordersPerPage);
+                
+                updateDisplayedOrders();
                 updateStats(stats);
+                showLoader(false);
             });
+        }
+
+        // دالة تحديث الطلبات المعروضة مع Pagination
+        function updateDisplayedOrders() {
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            const filter = document.getElementById('filter-status').value;
+            
+            // تصفية الطلبات
+            appState.filteredOrders = appState.allOrders.filter(o => {
+                if (appState.currentUser.role !== 'admin' && o.sender !== appState.currentUser.name) return false;
+                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm)) return false;
+                if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
+                if (filter && filter !== 'duplicate' && o.status !== filter) return false;
+                return true;
+            });
+            
+            appState.pagination.totalPages = Math.ceil(appState.filteredOrders.length / appState.pagination.ordersPerPage);
+            
+            // الحصول على الطلبات للصفحة الحالية
+            const startIndex = (appState.pagination.page - 1) * appState.pagination.ordersPerPage;
+            const endIndex = startIndex + appState.pagination.ordersPerPage;
+            
+            appState.displayedOrders = appState.filteredOrders.slice(startIndex, endIndex);
+            appState.pagination.hasMore = endIndex < appState.filteredOrders.length;
+            
+            displayOrders(appState.displayedOrders);
+            updatePagination();
+            updateDuplicateCounter();
         }
 
         // دالة الكشف عن التكرار في الطلبات الموجودة
         function detectExistingDuplicates() {
             const duplicatesMap = new Map();
             
-            // إنشاء مفتوح فريد لكل طلب بناءً على البيانات
-            allOrders.forEach(order => {
+            appState.allOrders.forEach(order => {
                 const key = `${order.gender}_${order.birth}_${order.joinDate || 'nojoin'}_${order.category || 'nocat'}`;
                 
                 if (!duplicatesMap.has(key)) {
@@ -1366,7 +1631,6 @@
                 duplicatesMap.get(key).push(order);
             });
             
-            // تحديث علامات التكرار
             duplicatesMap.forEach(orders => {
                 if (orders.length > 1) {
                     orders.forEach(order => {
@@ -1380,19 +1644,8 @@
         // دالة عرض الطلبات
         function displayOrders(orders) {
             const container = document.getElementById('orders-cards-container');
-            const searchTerm = document.getElementById('search-box').value.toLowerCase();
-            const filter = document.getElementById('filter-status').value;
             
-            // تصفية الطلبات
-            let filteredOrders = orders.filter(o => {
-                if (currentUser.role !== 'admin' && o.sender !== currentUser.name) return false;
-                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm)) return false;
-                if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
-                if (filter && filter !== 'duplicate' && o.status !== filter) return false;
-                return true;
-            });
-            
-            if (filteredOrders.length === 0) {
+            if (orders.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-12 text-gray-500">
                         <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
@@ -1403,7 +1656,7 @@
             }
             
             let cardsHTML = '';
-            filteredOrders.forEach((order) => {
+            orders.forEach((order) => {
                 const isDuplicate = order.isDuplicate || order.hasDuplicates;
                 const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
                 const duplicateClass = isDuplicate ? 'duplicate' : '';
@@ -1434,6 +1687,42 @@
                        </div>`
                     : '';
                 
+                // عرض سجل الحالة
+                const statusHistoryHTML = order.statusHistory ? `
+                    <div class="mt-4 p-4 bg-gray-50 rounded-xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm font-medium text-gray-700">
+                                <i class="fas fa-history ml-1"></i> سجل الحالة:
+                            </span>
+                            <span class="text-xs text-gray-500">${order.statusHistory.length} حدث</span>
+                        </div>
+                        <div class="timeline">
+                            ${order.statusHistory.slice(-5).map(history => {
+                                let icon, statusClass;
+                                switch(history.status) {
+                                    case 'تم الاستلام': icon = 'fa-inbox'; statusClass = 'received'; break;
+                                    case 'تم المشاهدة': icon = 'fa-eye'; statusClass = 'viewed'; break;
+                                    case 'تم الرد': icon = 'fa-reply'; statusClass = 'replied'; break;
+                                    case 'مكتمل': icon = 'fa-check'; statusClass = 'completed'; break;
+                                    default: icon = 'fa-circle'; statusClass = '';
+                                }
+                                const time = new Date(history.timestamp).toLocaleString('ar-EG');
+                                return `
+                                    <div class="timeline-item ${statusClass}">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-800">${history.status}</p>
+                                                <p class="text-xs text-gray-500 mt-1">بواسطة: ${history.user}</p>
+                                            </div>
+                                            <p class="text-xs text-gray-500">${time}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : '';
+                
                 // معلومات التكرار
                 let duplicateInfo = '';
                 if (isDuplicate) {
@@ -1452,7 +1741,7 @@
                     `;
                 }
                 
-                // عرض ملاحظات المسؤول إن وجدت
+                // عرض ملاحظات المسؤول
                 const adminNotesDisplay = order.adminNotes ? `
                     <div class="mt-4 p-4 bg-purple-50 rounded-xl">
                         <div class="flex justify-between items-center mb-2">
@@ -1467,7 +1756,7 @@
                 ` : '';
                 
                 let actionsHTML = '';
-                if (currentUser.role === 'admin') {
+                if (appState.currentUser.role === 'admin') {
                     actionsHTML = `
                         <div class="flex gap-2 mt-4">
                             <button onclick="openReplyModal('${order.id}')" class="flex-1 btn btn-primary py-2 text-sm">
@@ -1478,7 +1767,7 @@
                             </button>
                         </div>
                     `;
-                } else if (order.sender === currentUser.name && order.status === "قيد المراجعة") {
+                } else if (order.sender === appState.currentUser.name && order.status === "قيد المراجعة") {
                     actionsHTML = `
                         <div class="flex gap-2 mt-4">
                             <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
@@ -1526,6 +1815,7 @@
                         
                         ${notesDisplay}
                         ${duplicateInfo}
+                        ${statusHistoryHTML}
                         
                         <div class="mt-4 p-4 bg-blue-50 rounded-xl">
                             <div class="flex justify-between items-center mb-2">
@@ -1551,33 +1841,148 @@
             });
             
             container.innerHTML = cardsHTML;
+        }
+
+        // دالة تحديث Pagination
+        function updatePagination() {
+            const container = document.getElementById('pagination-container');
+            const indicator = document.getElementById('infinite-scroll-indicator');
             
-            // تحديث عداد الطلبات المكررة
-            updateDuplicateCounter();
+            if (appState.filteredOrders.length <= appState.pagination.ordersPerPage) {
+                container.classList.add('hidden');
+                indicator.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            
+            let paginationHTML = '';
+            const maxPagesToShow = 5;
+            const startPage = Math.max(1, appState.pagination.page - Math.floor(maxPagesToShow / 2));
+            const endPage = Math.min(appState.pagination.totalPages, startPage + maxPagesToShow - 1);
+            
+            // زر الصفحة السابقة
+            paginationHTML += `
+                <button onclick="goToPage(${appState.pagination.page - 1})" 
+                    ${appState.pagination.page === 1 ? 'disabled' : ''}
+                    class="page-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+            
+            // صفحات
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button onclick="goToPage(${i})" 
+                        class="page-btn ${i === appState.pagination.page ? 'active' : ''}">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            // زر الصفحة التالية
+            paginationHTML += `
+                <button onclick="goToPage(${appState.pagination.page + 1})" 
+                    ${appState.pagination.page === appState.pagination.totalPages ? 'disabled' : ''}
+                    class="page-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            `;
+            
+            container.innerHTML = paginationHTML;
+            
+            // إظهار مؤشر التحميل إذا كان هناك المزيد
+            if (appState.pagination.hasMore && appState.pagination.page < appState.pagination.totalPages) {
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
+            }
+        }
+
+        // دالة الذهاب إلى صفحة معينة
+        window.goToPage = function(page) {
+            if (page < 1 || page > appState.pagination.totalPages) return;
+            
+            appState.pagination.page = page;
+            updateDisplayedOrders();
+            
+            // التمرير للأعلى
+            window.scrollTo({
+                top: document.getElementById('orders-cards-container').offsetTop - 100,
+                behavior: 'smooth'
+            });
+        };
+
+        // دالة إعداد Infinite Scroll
+        function setupInfiniteScroll() {
+            let isLoading = false;
+            
+            window.addEventListener('scroll', () => {
+                if (isLoading || !appState.pagination.hasMore) return;
+                
+                const container = document.getElementById('orders-cards-container');
+                const scrollPosition = window.innerHeight + window.scrollY;
+                const containerBottom = container.offsetTop + container.offsetHeight;
+                
+                if (scrollPosition >= containerBottom - 200) {
+                    loadMoreOrders();
+                }
+            });
+        }
+
+        // دالة تحميل المزيد من الطلبات
+        async function loadMoreOrders() {
+            if (appState.pagination.isLoadingMore || !appState.pagination.hasMore) return;
+            
+            appState.pagination.isLoadingMore = true;
+            appState.pagination.page++;
+            
+            const indicator = document.getElementById('infinite-scroll-indicator');
+            indicator.classList.remove('hidden');
+            
+            // محاكاة تحميل بطيء للعرض
+            setTimeout(() => {
+                updateDisplayedOrders();
+                appState.pagination.isLoadingMore = false;
+                indicator.classList.add('hidden');
+            }, 300);
         }
 
         // دالة تحديث عداد الطلبات المكررة
         function updateDuplicateCounter() {
-            if (duplicateCount > 0) {
+            if (appState.duplicateCount > 0) {
                 document.getElementById('duplicate-count').classList.remove('hidden');
-                document.getElementById('duplicate-number').innerText = duplicateCount;
+                document.getElementById('duplicate-number').innerText = appState.duplicateCount;
             } else {
                 document.getElementById('duplicate-count').classList.add('hidden');
             }
         }
 
-        // دالة إعداد البحث والتصفية
+        // دالة إعداد البحث والتصفية مع Debouncing
         function setupSearchAndFilter() {
+            let searchTimeout;
             const searchBox = document.getElementById('search-box');
             const filterStatus = document.getElementById('filter-status');
             
-            searchBox.addEventListener('input', () => displayOrders(allOrders));
-            filterStatus.addEventListener('change', () => displayOrders(allOrders));
+            searchBox.addEventListener('input', (e) => {
+                appState.filters.search = e.target.value;
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    appState.pagination.page = 1;
+                    updateDisplayedOrders();
+                }, 300);
+            });
+            
+            filterStatus.addEventListener('change', (e) => {
+                appState.filters.status = e.target.value;
+                appState.pagination.page = 1;
+                updateDisplayedOrders();
+            });
         }
 
         // دالة تحديث الإحصائيات
         function updateStats(stats) {
-            if (currentUser.role === 'admin') {
+            if (appState.currentUser.role === 'admin') {
                 document.getElementById('stat-total').innerText = stats.total;
                 document.getElementById('stat-pending').innerText = stats.pending;
                 document.getElementById('stat-done').innerText = stats.done;
@@ -1587,7 +1992,7 @@
 
         // دالة نسخ الرد
         window.copyReply = function(orderId) {
-            const order = allOrders.find(o => o.id === orderId);
+            const order = appState.allOrders.find(o => o.id === orderId);
             if (!order || !order.reply) return;
             
             navigator.clipboard.writeText(order.reply)
@@ -1595,14 +2000,62 @@
                 .catch(() => alert("حدث خطأ في النسخ"));
         };
 
-        // دالة فتح مودال رد المسؤول
+        // دالة فتح مودال رد المسؤول مع سجل الحالة
         window.openReplyModal = function(orderId) {
-            const order = allOrders.find(o => o.id === orderId);
+            const order = appState.allOrders.find(o => o.id === orderId);
             if (!order) return;
             
-            selectedOrderId = orderId;
+            appState.selectedOrderId = orderId;
             
-            document.getElementById('modal-title').innerText = 'رد على الطلب';
+            document.getElementById('modal-title').innerText = 'رد على الطلب مع سجل الحالة';
+            
+            // تحديث سجل الحالة - إضافة مشاهدة المسؤول
+            if (appState.currentUser.role === 'admin') {
+                const viewedHistory = {
+                    status: "تم المشاهدة",
+                    timestamp: Date.now(),
+                    user: appState.currentUser.name
+                };
+                
+                const updatedHistory = order.statusHistory ? [...order.statusHistory, viewedHistory] : [viewedHistory];
+                
+                update(ref(db, 'orders/' + orderId), {
+                    statusHistory: updatedHistory
+                });
+            }
+            
+            const statusHistoryHTML = order.statusHistory ? `
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-800 mb-3">
+                        <i class="fas fa-history ml-1"></i> سجل الحالة
+                    </h4>
+                    <div class="timeline">
+                        ${order.statusHistory.map(history => {
+                            let icon, statusClass;
+                            switch(history.status) {
+                                case 'تم الاستلام': icon = 'fa-inbox'; statusClass = 'received'; break;
+                                case 'تم المشاهدة': icon = 'fa-eye'; statusClass = 'viewed'; break;
+                                case 'تم الرد': icon = 'fa-reply'; statusClass = 'replied'; break;
+                                case 'مكتمل': icon = 'fa-check'; statusClass = 'completed'; break;
+                                default: icon = 'fa-circle'; statusClass = '';
+                            }
+                            const time = new Date(history.timestamp).toLocaleString('ar-EG');
+                            return `
+                                <div class="timeline-item ${statusClass}">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800">${history.status}</p>
+                                            <p class="text-xs text-gray-500 mt-1">بواسطة: ${history.user}</p>
+                                        </div>
+                                        <p class="text-xs text-gray-500">${time}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
             document.getElementById('modal-content').innerHTML = `
                 <div class="space-y-4">
                     <div class="bg-blue-50 p-4 rounded-lg">
@@ -1619,6 +2072,8 @@
                             </div>
                         </div>
                     </div>
+                    
+                    ${statusHistoryHTML}
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1652,7 +2107,7 @@
             document.getElementById('admin-reply-text').focus();
         };
 
-        // دالة حفظ رد المسؤول
+        // دالة حفظ رد المسؤول مع تحديث سجل الحالة
         window.saveReply = function() {
             const reply = document.getElementById('admin-reply-text').value.trim();
             const adminNotes = document.getElementById('admin-notes-text').value.trim();
@@ -1662,27 +2117,42 @@
                 return;
             }
             
-            const order = allOrders.find(o => o.id === selectedOrderId);
+            const order = appState.allOrders.find(o => o.id === appState.selectedOrderId);
+            
+            // إضافة حدث الرد إلى سجل الحالة
+            const repliedHistory = {
+                status: "تم الرد",
+                timestamp: Date.now(),
+                user: appState.currentUser.name
+            };
+            
+            const completedHistory = {
+                status: "مكتمل",
+                timestamp: Date.now(),
+                user: appState.currentUser.name
+            };
+            
+            const updatedHistory = order.statusHistory 
+                ? [...order.statusHistory, repliedHistory, completedHistory]
+                : [repliedHistory, completedHistory];
+            
             const updates = {
                 reply: reply,
                 status: "مكتمل",
-                replyTimestamp: new Date().toLocaleString('ar-EG')
+                replyTimestamp: new Date().toLocaleString('ar-EG'),
+                statusHistory: updatedHistory
             };
             
-            // إضافة ملاحظات المسؤول إن وجدت
             if (adminNotes) {
                 updates.adminNotes = adminNotes;
             }
             
-            update(ref(db, 'orders/' + selectedOrderId), updates)
+            update(ref(db, 'orders/' + appState.selectedOrderId), updates)
             .then(() => {
-                // إرسال إشعار للمستخدم عن الرد
                 sendNotification('order_replied', order.sender, 'المسؤول العام', order.subjectName);
-                
-                // إرسال إشعار اكتمال الطلب
                 sendNotification('order_completed', order.sender, 'المسؤول العام', order.subjectName);
                 
-                alert("✅ تم إرسال الرد بنجاح");
+                alert("✅ تم إرسال الرد وتحديث سجل الحالة بنجاح");
                 closeModal();
                 fetchOrders();
             })
@@ -1704,7 +2174,7 @@
         // دالة إغلاق المودال
         window.closeModal = function() {
             document.getElementById('modal-reply').classList.add('hidden');
-            selectedOrderId = '';
+            appState.selectedOrderId = '';
         };
 
         // دالة تسجيل الخروج
@@ -1717,7 +2187,7 @@
         const session = localStorage.getItem('user_session');
         if (session) {
             const sessionData = JSON.parse(session);
-            currentUser = { name: sessionData.name, role: sessionData.role };
+            appState.currentUser = { name: sessionData.name, role: sessionData.role };
             showDashboard();
         }
 
@@ -1737,6 +2207,15 @@
                 dropdown.classList.add('hidden');
             }
         });
+
+        // Service Worker للتخزين المؤقت
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(err => {
+                    console.log('SW registration failed:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
