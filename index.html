@@ -289,6 +289,133 @@
             font-weight: bold;
         }
         
+        /* تنسيقات الصور */
+        .image-preview-container {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        
+        .image-preview-container:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 0 auto 15px;
+            display: block;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .remove-image-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        
+        .remove-image-btn:hover {
+            background: #e2e8f0;
+        }
+        
+        .image-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .order-image {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin: 15px 0;
+        }
+        
+        .order-image:hover {
+            transform: scale(1.02);
+        }
+        
+        /* مودال عرض الصورة */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+        }
+        
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close-image-modal {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .close-image-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
         /* تصميم متجاوب */
         @media (max-width: 640px) {
             .modal-content {
@@ -300,6 +427,74 @@
                 padding: 20px;
                 border-radius: 20px;
             }
+            
+            .image-modal-content {
+                max-width: 95%;
+                max-height: 80%;
+            }
+            
+            .close-image-modal {
+                top: 10px;
+                left: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+        }
+
+        /* إشعارات البوش */
+        .push-notification {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .notification-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .notification-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .notification-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
         }
     </style>
 </head>
@@ -468,12 +663,12 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-user-tag ml-1 text-gray-400"></i> اسم صاحب الطلب *
+                                    <i class="fas fa-user-tag ml-1 text-gray-400"></i> اسم صاحب الطلب
+                                    <span class="text-gray-400 text-xs">(اختياري)</span>
                                 </label>
                                 <input 
                                     type="text" 
                                     id="subject-name" 
-                                    required 
                                     placeholder="الاسم الكامل"
                                 >
                             </div>
@@ -603,6 +798,48 @@
                                     rows="3" 
                                     placeholder="أي تفاصيل أو معلومات إضافية..."
                                 ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- الصف الرابع: رفع الصورة (اختياري) -->
+                        <div class="pt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-image ml-1 text-gray-400"></i> رفع صورة
+                                <span class="text-gray-400 text-xs">(اختياري)</span>
+                            </label>
+                            
+                            <div id="image-upload-container">
+                                <!-- الحالة الافتراضية: اختيار الصورة -->
+                                <div id="no-image-section" class="image-preview-container">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 mb-4">اسحب وأفلت صورة هنا أو</p>
+                                    <label for="image-upload" class="upload-btn">
+                                        <i class="fas fa-image ml-1"></i> اختيار صورة
+                                    </label>
+                                    <input 
+                                        type="file" 
+                                        id="image-upload" 
+                                        accept="image/*" 
+                                        class="hidden"
+                                        onchange="previewImage(event)"
+                                    >
+                                    <p class="text-xs text-gray-500 mt-3">الصيغ المدعومة: JPG, PNG, GIF (الحد الأقصى: 2MB)</p>
+                                </div>
+                                
+                                <!-- الحالة: معاينة الصورة -->
+                                <div id="image-preview-section" class="hidden">
+                                    <div class="image-preview-container">
+                                        <img id="image-preview" src="" alt="معاينة الصورة" class="image-preview">
+                                        <div class="image-actions">
+                                            <label for="image-upload" class="upload-btn">
+                                                <i class="fas fa-sync-alt ml-1"></i> تغيير الصورة
+                                            </label>
+                                            <button type="button" onclick="removeImage()" class="remove-image-btn">
+                                                <i class="fas fa-trash ml-1"></i> حذف الصورة
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -737,6 +974,14 @@
         </div>
     </div>
 
+    <!-- مودال عرض الصورة بالحجم الكامل -->
+    <div id="image-modal" class="image-modal hidden">
+        <button onclick="closeImageModal()" class="close-image-modal">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="full-size-image" src="" alt="الصورة بالحجم الكامل" class="image-modal-content">
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
@@ -762,7 +1007,7 @@
             "2001": { name: "مهدي (د. إيهاب)", role: "user" },
             "1996": { name: "حيدر الكرعاوي", role: "user" },
             "1234": { name: "مستخدم تجريبي", role: "user" },
-            "2026": { name: "صفحة التقاعد الاختياري", role: "user" } // المستخدم الجديد
+            "2026": { name: "صفحة التقاعد الاختياري", role: "user" }
         };
 
         let currentUser = null;
@@ -772,6 +1017,53 @@
         let duplicateOrders = [];
         let duplicateCount = 0;
         let notifications = [];
+        let selectedImageFile = null;
+        let imagePreviewUrl = null;
+
+        // دالة عرض الإشعار العائم
+        function showPushNotification(title, message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `push-notification notification-${type}`;
+            
+            let icon;
+            switch(type) {
+                case 'success': icon = 'fa-check-circle'; break;
+                case 'warning': icon = 'fa-exclamation-triangle'; break;
+                default: icon = 'fa-bell';
+            }
+            
+            notification.innerHTML = `
+                <div class="notification-icon ${type === 'success' ? 'notification-success' : type === 'warning' ? 'notification-warning' : 'notification-info'}">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-gray-800">${title}</h4>
+                    <p class="text-sm text-gray-600">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // إزالة الإشعار بعد 5 ثواني
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // دالة تحويل الصورة إلى Base64
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
 
         // دالة تسجيل الدخول
         window.handleLogin = function() {
@@ -791,8 +1083,14 @@
                 
                 // طلب إذن الإشعارات من المتصفح
                 if (Notification.permission === 'default') {
-                    Notification.requestPermission();
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            showPushNotification('تم تفعيل الإشعارات', 'سيتم إعلامك بجميع التحديثات الجديدة', 'success');
+                        }
+                    });
                 }
+                
+                showPushNotification('مرحباً ' + currentUser.name, 'تم تسجيل الدخول بنجاح', 'success');
             } else {
                 alert("رمز الدخول غير صحيح!");
             }
@@ -829,6 +1127,7 @@
         window.refreshOrders = function() {
             fetchOrders();
             fetchNotifications();
+            showPushNotification('تم التحديث', 'تم تحديث قائمة الطلبات', 'info');
         }
 
         // دالة جلب الإشعارات
@@ -901,9 +1200,12 @@
                     
                     new Notification(title, {
                         body: body,
-                        icon: '/icon.png',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
                         tag: notif.id
                     });
+                    
+                    // إشعار عائم
+                    showPushNotification(title, body, 'info');
                 }
                 
                 // تحديث حالة الإشعار كمقروء
@@ -1029,6 +1331,7 @@
                     update(ref(db, 'notifications/' + notif.id), { read: true });
                 }
             });
+            showPushNotification('تم تعيين الكل كمقروء', 'تمت قراءة جميع الإشعارات', 'success');
         }
 
         // دالة إرسال إشعار
@@ -1044,7 +1347,83 @@
             };
             
             push(ref(db, 'notifications'), notificationData);
+            
+            // إشعار فوري للمستخدم إذا كان موجوداً في النظام
+            if (currentUser && (currentUser.name === targetUser || currentUser.role === 'admin')) {
+                let title, message;
+                switch(type) {
+                    case 'new_order':
+                        title = '📋 طلب جديد';
+                        message = `طلب جديد من ${sender}`;
+                        break;
+                    case 'order_replied':
+                        title = '💬 رد على طلبك';
+                        message = `تم الرد على طلبك من قبل المسؤول`;
+                        break;
+                    case 'order_completed':
+                        title = '✅ اكتمال الطلب';
+                        message = `تم إكمال طلبك بنجاح`;
+                        break;
+                    case 'duplicate_warning':
+                        title = '⚠️ تنبيه تكرار';
+                        message = `تم اكتشاف طلب مكرر من ${sender}`;
+                        break;
+                }
+                
+                showPushNotification(title, message, type === 'duplicate_warning' ? 'warning' : 'info');
+            }
         }
+
+        // دالة معاينة الصورة
+        window.previewImage = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // التحقق من نوع الملف
+            if (!file.type.match('image.*')) {
+                alert('يرجى اختيار ملف صورة فقط');
+                return;
+            }
+            
+            // التحقق من حجم الملف (2MB كحد أقصى)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('حجم الصورة كبير جداً. الحد الأقصى هو 2MB');
+                return;
+            }
+            
+            selectedImageFile = file;
+            
+            // إنشاء URL للمعاينة
+            imagePreviewUrl = URL.createObjectURL(file);
+            
+            // عرض المعاينة
+            const previewImg = document.getElementById('image-preview');
+            previewImg.src = imagePreviewUrl;
+            
+            // تبديل الأقسام
+            document.getElementById('no-image-section').classList.add('hidden');
+            document.getElementById('image-preview-section').classList.remove('hidden');
+            
+            showPushNotification('تم رفع الصورة', 'تمت معاينة الصورة بنجاح', 'success');
+        };
+
+        // دالة حذف الصورة
+        window.removeImage = function() {
+            selectedImageFile = null;
+            if (imagePreviewUrl) {
+                URL.revokeObjectURL(imagePreviewUrl);
+                imagePreviewUrl = null;
+            }
+            
+            // إعادة تعيين حقل الرفع
+            document.getElementById('image-upload').value = '';
+            
+            // تبديل الأقسام
+            document.getElementById('no-image-section').classList.remove('hidden');
+            document.getElementById('image-preview-section').classList.add('hidden');
+            
+            showPushNotification('تم حذف الصورة', 'تم إزالة الصورة المرفوعة', 'info');
+        };
 
         // دالة الكشف عن التكرار
         function checkForDuplicates(newOrder) {
@@ -1102,10 +1481,17 @@
             const jYear = document.getElementById('j-year').value;
             const notes = document.getElementById('notes').value.trim();
             
-            // التحقق من الحقول المطلوبة
-            if (!gender || !subjectName || !bDay || !bMonth || !bYear) {
-                alert("الرجاء ملء جميع الحقول المطلوبة (*)");
+            // التحقق من الحقول المطلوبة (الجنس وتاريخ الميلاد فقط)
+            if (!gender || !bDay || !bMonth || !bYear) {
+                alert("الرجاء ملء الجنس وتاريخ الميلاد (الحقول المطلوبة)");
                 return;
+            }
+            
+            // التحقق من وجود بيانات (صورة أو اسم)
+            if (!subjectName && !selectedImageFile) {
+                if (!confirm("لم تقم بإضافة صورة أو اسم للطلب. هل تريد المتابعة؟")) {
+                    return;
+                }
             }
             
             // إعداد بيانات الطلب الجديد
@@ -1118,14 +1504,14 @@
             const newOrderData = {
                 sender: currentUser.name,
                 gender: gender,
-                subjectName: subjectName,
+                subjectName: subjectName || 'بدون اسم',
                 category: category || '',
                 birth: birthDate,
                 joinDate: joinDate,
                 notes: notes,
                 status: "قيد المراجعة",
                 reply: "",
-                adminNotes: "", // حقل جديد لملاحظات المسؤول
+                adminNotes: "",
                 timestamp: new Date().toLocaleString('ar-EG'),
                 timestampOrder: Date.now(),
                 senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
@@ -1142,7 +1528,7 @@
                 showDuplicateAlert(duplicateOrders, newOrderData);
             } else {
                 // لا يوجد تكرار، المتابعة في الإرسال العادي
-                submitOrder(newOrderData);
+                await submitOrder(newOrderData, selectedImageFile);
             }
         };
 
@@ -1264,23 +1650,38 @@
             currentNewOrderData.duplicateReferences = duplicateOrders.map(d => d.id);
             
             try {
+                // تحويل الصورة إلى Base64 إذا كانت موجودة
+                if (selectedImageFile) {
+                    try {
+                        const base64Image = await convertImageToBase64(selectedImageFile);
+                        currentNewOrderData.imageData = base64Image;
+                        currentNewOrderData.hasImage = true;
+                        currentNewOrderData.imageName = selectedImageFile.name;
+                    } catch (imageError) {
+                        console.error('خطأ في تحويل الصورة:', imageError);
+                        alert('حدث خطأ في معالجة الصورة. سيتم إرسال الطلب بدون الصورة.');
+                    }
+                }
+                
+                // إرسال الطلب
                 await push(ref(db, 'orders'), currentNewOrderData);
                 
                 // إرسال إشعار للمسؤول عن الطلب الجديد
                 sendNotification('new_order', 'المسؤول العام', currentUser.name, currentNewOrderData.subjectName);
                 
+                showPushNotification('تم إرسال الطلب', `تم إرسال الطلب مع تحذير التكرار (${duplicateOrders.length} مكرر)`, 'success');
+                
                 // إغلاق نافذة التنبيه
                 closeDuplicateAlert();
                 
-                // إظهار رسالة نجاح
-                alert(`✅ تم إرسال الطلب مع التحذير\nتم اكتشاف ${duplicateOrders.length} طلب مكرر سابقاً`);
-                
                 // إعادة تعيين النموذج
                 document.getElementById('request-form').reset();
+                removeImage();
                 
                 // تحديث قائمة الطلبات
                 fetchOrders();
             } catch (error) {
+                showPushNotification('خطأ في الإرسال', error.message, 'warning');
                 alert("حدث خطأ في إرسال الطلب: " + error.message);
             } finally {
                 btn.disabled = false;
@@ -1289,21 +1690,43 @@
         };
 
         // دالة الإرسال العادي (بدون تكرار)
-        async function submitOrder(orderData) {
+        async function submitOrder(orderData, imageFile, isForceSubmit = false) {
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
             
             try {
+                // تحويل الصورة إلى Base64 إذا كانت موجودة
+                if (imageFile) {
+                    try {
+                        const base64Image = await convertImageToBase64(imageFile);
+                        orderData.imageData = base64Image;
+                        orderData.hasImage = true;
+                        orderData.imageName = imageFile.name;
+                    } catch (imageError) {
+                        console.error('خطأ في تحويل الصورة:', imageError);
+                        alert('حدث خطأ في معالجة الصورة. سيتم إرسال الطلب بدون الصورة.');
+                    }
+                }
+                
+                // إرسال الطلب
                 await push(ref(db, 'orders'), orderData);
                 
                 // إرسال إشعار للمسؤول عن الطلب الجديد
                 sendNotification('new_order', 'المسؤول العام', currentUser.name, orderData.subjectName);
                 
-                alert("✅ تم إرسال الطلب بنجاح");
-                document.getElementById('request-form').reset();
+                if (!isForceSubmit) {
+                    showPushNotification('تم إرسال الطلب', 'تم إرسال الطلب بنجاح', 'success');
+                    document.getElementById('request-form').reset();
+                    removeImage();
+                } else {
+                    showPushNotification('تم إرسال الطلب', `تم إرسال الطلب مع تحذير التكرار (${duplicateOrders.length} مكرر)`, 'success');
+                }
+                
                 fetchOrders();
             } catch (error) {
+                console.error("حدث خطأ في إرسال الطلب:", error);
+                showPushNotification('خطأ في الإرسال', error.message, 'warning');
                 alert("حدث خطأ في إرسال الطلب: " + error.message);
             } finally {
                 btn.disabled = false;
@@ -1316,6 +1739,18 @@
             document.getElementById('duplicate-alert').classList.add('hidden');
             currentNewOrderData = null;
             duplicateOrders = [];
+        };
+
+        // دالة فتح الصورة بالحجم الكامل
+        window.openImageModal = function(imageUrl) {
+            document.getElementById('full-size-image').src = imageUrl;
+            document.getElementById('image-modal').classList.remove('hidden');
+        };
+
+        // دالة إغلاق مودال الصورة
+        window.closeImageModal = function() {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('full-size-image').src = '';
         };
 
         // دالة جلب الطلبات
@@ -1386,7 +1821,7 @@
             // تصفية الطلبات
             let filteredOrders = orders.filter(o => {
                 if (currentUser.role !== 'admin' && o.sender !== currentUser.name) return false;
-                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm)) return false;
+                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm) && !o.notes.toLowerCase().includes(searchTerm)) return false;
                 if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
                 if (filter && filter !== 'duplicate' && o.status !== filter) return false;
                 return true;
@@ -1433,6 +1868,26 @@
                           <p class="text-gray-700 text-sm mt-1">${order.notes}</p>
                        </div>`
                     : '';
+                
+                // عرض الصورة إن وجدت
+                let imageDisplay = '';
+                if (order.imageData) {
+                    imageDisplay = `
+                        <div class="mt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">
+                                    <i class="fas fa-image ml-1"></i> الصورة المرفقة:
+                                </span>
+                                <span class="text-xs text-gray-500">${order.imageName || ''}</span>
+                            </div>
+                            <img src="${order.imageData}" 
+                                 alt="صورة الطلب" 
+                                 class="order-image"
+                                 onclick="openImageModal('${order.imageData}')"
+                                 title="انقر لعرض الصورة بالحجم الكامل">
+                        </div>
+                    `;
+                }
                 
                 // معلومات التكرار
                 let duplicateInfo = '';
@@ -1524,6 +1979,7 @@
                             </div>
                         </div>
                         
+                        ${imageDisplay}
                         ${notesDisplay}
                         ${duplicateInfo}
                         
@@ -1591,7 +2047,9 @@
             if (!order || !order.reply) return;
             
             navigator.clipboard.writeText(order.reply)
-                .then(() => alert("تم نسخ الرد بنجاح"))
+                .then(() => {
+                    showPushNotification('تم النسخ', 'تم نسخ الرد بنجاح', 'success');
+                })
                 .catch(() => alert("حدث خطأ في النسخ"));
         };
 
@@ -1603,6 +2061,22 @@
             selectedOrderId = orderId;
             
             document.getElementById('modal-title').innerText = 'رد على الطلب';
+            
+            let imageSection = '';
+            if (order.imageData) {
+                imageSection = `
+                    <div class="mt-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">الصورة المرفقة:</p>
+                        <img src="${order.imageData}" 
+                             alt="صورة الطلب" 
+                             class="w-full max-w-xs mx-auto rounded-lg cursor-pointer"
+                             onclick="openImageModal('${order.imageData}')"
+                             title="انقر لعرض الصورة بالحجم الكامل">
+                        ${order.imageName ? `<p class="text-xs text-gray-500 text-center mt-2">${order.imageName}</p>` : ''}
+                    </div>
+                `;
+            }
+            
             document.getElementById('modal-content').innerHTML = `
                 <div class="space-y-4">
                     <div class="bg-blue-50 p-4 rounded-lg">
@@ -1618,6 +2092,7 @@
                                 <p class="font-medium">${order.birth || '-'}</p>
                             </div>
                         </div>
+                        ${imageSection}
                     </div>
                     
                     <div>
@@ -1682,11 +2157,14 @@
                 // إرسال إشعار اكتمال الطلب
                 sendNotification('order_completed', order.sender, 'المسؤول العام', order.subjectName);
                 
-                alert("✅ تم إرسال الرد بنجاح");
+                showPushNotification('تم الرد على الطلب', `تم الرد على طلب ${order.subjectName}`, 'success');
                 closeModal();
                 fetchOrders();
             })
-            .catch(error => alert("حدث خطأ: " + error.message));
+            .catch(error => {
+                showPushNotification('خطأ في الحفظ', error.message, 'warning');
+                alert("حدث خطأ: " + error.message);
+            });
         };
 
         // دالة حذف الطلب
@@ -1695,10 +2173,13 @@
             
             remove(ref(db, 'orders/' + orderId))
                 .then(() => {
-                    alert("✅ تم الحذف بنجاح");
+                    showPushNotification('تم الحذف', 'تم حذف الطلب بنجاح', 'success');
                     fetchOrders();
                 })
-                .catch(error => alert("حدث خطأ: " + error.message));
+                .catch(error => {
+                    showPushNotification('خطأ في الحذف', error.message, 'warning');
+                    alert("حدث خطأ: " + error.message);
+                });
         };
 
         // دالة إغلاق المودال
@@ -1710,7 +2191,10 @@
         // دالة تسجيل الخروج
         window.logout = function() {
             localStorage.clear();
-            location.reload();
+            showPushNotification('تم تسجيل الخروج', 'تم تسجيل الخروج بنجاح', 'info');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         };
 
         // التحقق من الجلسة الحالية
@@ -1737,6 +2221,81 @@
                 dropdown.classList.add('hidden');
             }
         });
+
+        // إغلاق مودال الصورة عند النقر خارجها
+        document.getElementById('image-modal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // إغلاق مودال الصورة بمفتاح ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !document.getElementById('image-modal').classList.contains('hidden')) {
+                closeImageModal();
+            }
+        });
+
+        // دعم سحب وإفلات الصور
+        const dropArea = document.getElementById('no-image-section');
+        
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#3b82f6';
+            dropArea.style.background = '#f0f9ff';
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.style.borderColor = '#e2e8f0';
+            dropArea.style.background = '#f8fafc';
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#e2e8f0';
+            dropArea.style.background = '#f8fafc';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.match('image.*')) {
+                // محاكاة تغيير input file
+                const input = document.getElementById('image-upload');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+                
+                // تشغيل دالة المعاينة
+                previewImage({ target: input });
+            } else {
+                alert('يرجى اختيار ملف صورة فقط');
+            }
+        });
+
+        // تسجيل Service Worker للإشعارات الدفعية
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('Service Worker registration failed:', err);
+                    });
+            });
+        }
+
+        // تهيئة الإشعارات الدفعية
+        function initializePushNotifications() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+                    }
+                });
+            }
+        }
+
+        // استدعاء تهيئة الإشعارات عند التحميل
+        initializePushNotifications();
     </script>
 </body>
 </html>
