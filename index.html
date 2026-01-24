@@ -618,6 +618,57 @@
                 margin: 16px 0;
             }
         }
+
+        /* حالة الطلب */
+        .order-status-timeline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.pending {
+            background: #f59e0b;
+        }
+
+        .status-dot.viewed {
+            background: #3b82f6;
+        }
+
+        .status-dot.completed {
+            background: #10b981;
+        }
+
+        .status-time {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .status-label {
+            font-weight: 600;
+        }
+
+        .status-separator {
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -1555,38 +1606,44 @@
             showPushNotification('تم حذف الصورة', 'تم إزالة الصورة المرفوعة', 'info');
         };
 
-        // دالة الكشف عن التكرار
+        // دالة الكشف عن التكرار بناءً على البيانات الأربعة
         function checkForDuplicates(newOrder) {
             duplicateOrders = [];
             
             allOrders.forEach(existingOrder => {
-                // مقارنة الجنس
+                // 1. مقارنة الجنس (مطلوب)
                 const genderMatch = newOrder.gender === existingOrder.gender;
                 
-                // مقارنة تاريخ الميلاد
+                // 2. مقارنة تاريخ الميلاد (مطلوب)
                 const birthMatch = newOrder.birth === existingOrder.birth;
                 
-                // مقارنة تاريخ الانتساب (إذا كان موجوداً في كلا الطلبين)
+                // 3. مقارنة تاريخ الانتساب (إذا كان موجوداً في كلا الطلبين)
                 let joinMatch = false;
                 if (newOrder.joinDate && existingOrder.joinDate) {
+                    // كلا الطلبين يحتويان على تاريخ انتساب - يجب أن يتطابقا
                     joinMatch = newOrder.joinDate === existingOrder.joinDate;
                 } else if (!newOrder.joinDate && !existingOrder.joinDate) {
-                    joinMatch = true; // كلاهما فارغ
+                    // كلاهما فارغ - يعتبر تطابق
+                    joinMatch = true;
                 } else if (!newOrder.joinDate || !existingOrder.joinDate) {
-                    joinMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
+                    // أحدهما فارغ والآخر ليس فارغاً - لا يعتبر تطابق (تعديل بناءً على طلب العميل)
+                    joinMatch = false;
                 }
                 
-                // مقارنة الفئة (إذا كانت موجودة في كلا الطلبين)
+                // 4. مقارنة الفئة (إذا كانت موجودة في كلا الطلبين)
                 let categoryMatch = false;
                 if (newOrder.category && existingOrder.category) {
+                    // كلا الطلبين يحتويان على فئة - يجب أن يتطابقا
                     categoryMatch = newOrder.category === existingOrder.category;
                 } else if (!newOrder.category && !existingOrder.category) {
-                    categoryMatch = true; // كلاهما فارغ
+                    // كلاهما فارغ - يعتبر تطابق
+                    categoryMatch = true;
                 } else if (!newOrder.category || !existingOrder.category) {
-                    categoryMatch = true; // أحدهما فارغ يعتبر تطابق جزئي
+                    // أحدهما فارغ والآخر ليس فارغاً - لا يعتبر تطابق (تعديل بناءً على طلب العميل)
+                    categoryMatch = false;
                 }
                 
-                // إذا كان هناك تطابق في جميع الحقول المطلوبة
+                // الكشف عن التكرار إذا تطابقت جميع الحقول الأربعة
                 if (genderMatch && birthMatch && joinMatch && categoryMatch) {
                     duplicateOrders.push(existingOrder);
                 }
@@ -1644,7 +1701,15 @@
                 adminNotes: "",
                 timestamp: new Date().toLocaleString('ar-EG'),
                 timestampOrder: Date.now(),
-                senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now()
+                senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now(),
+                // إضافة حقول تتبع الحالة
+                statusTimeline: {
+                    pending: {
+                        status: "قيد المراجعة",
+                        time: new Date().toLocaleString('ar-EG'),
+                        timestamp: Date.now()
+                    }
+                }
             };
             
             // حفظ بيانات الطلب الحالية لاستخدامها لاحقاً
@@ -1662,8 +1727,15 @@
             }
         };
 
-        // دالة عرض تنبيه التكرار
+        // دالة عرض تنبيه التكرار (مخصصة للمستخدم والمسؤول فقط)
         function showDuplicateAlert(duplicates, newOrder) {
+            // التحقق إذا كان المستخدم الحالي هو المسؤول أو مقدم الطلب
+            if (currentUser.role !== 'admin' && newOrder.sender !== currentUser.name) {
+                // إذا لم يكن مسؤولاً وليس مقدم الطلب، تخطي التنبيه
+                submitOrder(newOrder, selectedImageFile);
+                return;
+            }
+            
             let alertContent = `
                 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                     <p class="font-bold text-red-700 mb-2">تفاصيل الطلب الجديد:</p>
@@ -1732,7 +1804,7 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
                     <p class="text-blue-700 text-sm flex items-center gap-2">
                         <i class="fas fa-info-circle"></i>
-                        <span>هذا التنبيه يظهر لكل من المستخدم والمسؤولين لمنع التكرار</span>
+                        <span>هذا التنبيه يظهر فقط للمسؤول ومقدم الطلب لمنع التكرار</span>
                     </p>
                 </div>
             `;
@@ -1746,8 +1818,9 @@
             }
         }
 
-        // دالة إرسال إشعار التكرار للمسؤولين
+        // دالة إرسال إشعار التكرار للمسؤولين فقط
         function sendDuplicateNotificationToAdmins(newOrder, duplicates) {
+            // إرسال إشعار للمسؤول العام فقط
             sendNotification('duplicate_warning', 'المسؤول العام', currentUser.name, newOrder.subjectName);
             
             const notificationData = {
@@ -1755,14 +1828,16 @@
                 newOrder: newOrder,
                 duplicateCount: duplicates.length,
                 timestamp: Date.now(),
-                notifiedAdmins: true
+                notifiedAdmins: true,
+                // تحديد أن الإشعار للمسؤول فقط
+                forAdminOnly: true
             };
             
             // تخزين الإشعار في قاعدة البيانات للمسؤولين
             try {
-                push(ref(db, 'notifications'), notificationData);
+                push(ref(db, 'admin_notifications'), notificationData);
             } catch (error) {
-                console.log("تم اكتشاف تكرار، لكن لم يتم إرسال إشعار للمسؤولين:", error);
+                console.log("تم اكتشاف تكرار، ولكن لم يتم إرسال إشعار للمسؤولين:", error);
             }
         }
 
@@ -1921,7 +1996,7 @@
         function detectExistingDuplicates() {
             const duplicatesMap = new Map();
             
-            // إنشاء مفتوح فريد لكل طلب بناءً على البيانات
+            // إنشاء مفتوح فريد لكل طلب بناءً على البيانات الأربعة
             allOrders.forEach(order => {
                 const key = `${order.gender}_${order.birth}_${order.joinDate || 'nojoin'}_${order.category || 'nocat'}`;
                 
@@ -2102,11 +2177,19 @@
             const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
             const duplicateClass = isDuplicate ? 'duplicate' : '';
             
+            // إظهار علامة التكرار فقط للمسؤول ومقدم الطلب
+            let showDuplicateBadge = false;
+            if (isDuplicate) {
+                if (currentUser.role === 'admin' || order.sender === currentUser.name) {
+                    showDuplicateBadge = true;
+                }
+            }
+            
             const statusBadge = order.status === 'مكتمل' 
                 ? '<span class="badge badge-success"><i class="fas fa-check-circle ml-1"></i> مكتمل</span>'
                 : '<span class="badge badge-warning"><i class="fas fa-clock ml-1"></i> قيد المراجعة</span>';
             
-            const duplicateBadge = isDuplicate ? `
+            const duplicateBadge = showDuplicateBadge ? `
                 <div class="duplicate-badge">
                     <i class="fas fa-exclamation-triangle"></i>
                     مكرر
@@ -2148,9 +2231,18 @@
                 `;
             }
             
-            // معلومات التكرار
+            // توليد جدول زمني لحالات الطلب
+            let statusTimelineHTML = '';
+            if (order.statusTimeline) {
+                statusTimelineHTML = generateStatusTimelineHTML(order.statusTimeline);
+            } else {
+                // إنشاء جدول زمني افتراضي للطلبات القديمة
+                statusTimelineHTML = generateDefaultTimelineHTML(order);
+            }
+            
+            // معلومات التكرار (تظهر فقط للمسؤول ومقدم الطلب)
             let duplicateInfo = '';
-            if (isDuplicate) {
+            if (showDuplicateBadge) {
                 const duplicateMsg = order.isDuplicate 
                     ? '<p class="text-red-600 text-sm font-bold mt-2"><i class="fas fa-exclamation-triangle ml-1"></i> تم إرسال هذا الطلب مع تحذير التكرار</p>'
                     : '<p class="text-amber-600 text-sm font-bold mt-2"><i class="fas fa-clone ml-1"></i> هناك طلبات أخرى بنفس البيانات</p>';
@@ -2240,6 +2332,7 @@
                     
                     ${imageDisplay}
                     ${notesDisplay}
+                    ${statusTimelineHTML}
                     ${duplicateInfo}
                     
                     <div class="mt-4 p-4 bg-blue-50 rounded-xl">
@@ -2265,11 +2358,106 @@
             `;
         }
 
+        // دالة توليد HTML لجدول الحالات الزمني
+        function generateStatusTimelineHTML(statusTimeline) {
+            let html = '<div class="order-status-timeline">';
+            
+            // حالة قيد المراجعة
+            if (statusTimeline.pending) {
+                html += `
+                    <div class="status-item">
+                        <div class="status-dot pending"></div>
+                        <div>
+                            <div class="status-label">${statusTimeline.pending.status}</div>
+                            <div class="status-time">${statusTimeline.pending.time}</div>
+                        </div>
+                    </div>
+                    <div class="status-separator"></div>
+                `;
+            }
+            
+            // حالة مشاهدة المسؤول (إذا كانت موجودة)
+            if (statusTimeline.viewed) {
+                html += `
+                    <div class="status-item">
+                        <div class="status-dot viewed"></div>
+                        <div>
+                            <div class="status-label">${statusTimeline.viewed.status}</div>
+                            <div class="status-time">${statusTimeline.viewed.time}</div>
+                        </div>
+                    </div>
+                    <div class="status-separator"></div>
+                `;
+            }
+            
+            // حالة اكتمال الطلب (إذا كانت موجودة)
+            if (statusTimeline.completed) {
+                html += `
+                    <div class="status-item">
+                        <div class="status-dot completed"></div>
+                        <div>
+                            <div class="status-label">${statusTimeline.completed.status}</div>
+                            <div class="status-time">${statusTimeline.completed.time}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // دالة توليد جدول زمني افتراضي للطلبات القديمة
+        function generateDefaultTimelineHTML(order) {
+            let html = '<div class="order-status-timeline">';
+            
+            // حالة قيد المراجعة (تاريخ الإرسال)
+            html += `
+                <div class="status-item">
+                    <div class="status-dot pending"></div>
+                    <div>
+                        <div class="status-label">قيد المراجعة</div>
+                        <div class="status-time">${order.timestamp}</div>
+                    </div>
+                </div>
+                <div class="status-separator"></div>
+            `;
+            
+            // حالة اكتمال الطلب (إذا كان الطلب مكتملاً)
+            if (order.status === 'مكتمل') {
+                const completionTime = order.replyTimestamp || order.timestamp;
+                html += `
+                    <div class="status-item">
+                        <div class="status-dot completed"></div>
+                        <div>
+                            <div class="status-label">مكتمل</div>
+                            <div class="status-time">${completionTime}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
         // دالة تحديث عداد الطلبات المكررة
         function updateDuplicateCounter() {
-            if (duplicateCount > 0) {
+            // تحديث العداد بناءً على الطلبات المكررة
+            let visibleDuplicateCount = 0;
+            if (currentUser.role === 'admin') {
+                // المسؤول يرى جميع الطلبات المكررة
+                visibleDuplicateCount = duplicateCount;
+            } else {
+                // المستخدم يرى فقط طلباته المكررة
+                visibleDuplicateCount = allOrders.filter(o => 
+                    o.isDuplicate && o.sender === currentUser.name
+                ).length;
+            }
+            
+            if (visibleDuplicateCount > 0) {
                 document.getElementById('duplicate-count').classList.remove('hidden');
-                document.getElementById('duplicate-number').innerText = duplicateCount;
+                document.getElementById('duplicate-number').innerText = visibleDuplicateCount;
             } else {
                 document.getElementById('duplicate-count').classList.add('hidden');
             }
@@ -2393,7 +2581,7 @@
             document.getElementById('admin-reply-text').focus();
         };
 
-        // دالة حفظ رد المسؤول
+        // دالة حفظ رد المسؤول مع تحديث الجدول الزمني
         window.saveReply = function() {
             const reply = document.getElementById('admin-reply-text').value.trim();
             const adminNotes = document.getElementById('admin-notes-text').value.trim();
@@ -2404,10 +2592,33 @@
             }
             
             const order = allOrders.find(o => o.id === selectedOrderId);
+            const currentTime = new Date().toLocaleString('ar-EG');
+            const currentTimestamp = Date.now();
+            
+            // تحديث بيانات الطلب مع الحفاظ على الجدول الزمني القديم
+            const statusTimeline = order.statusTimeline || {};
+            
+            // تحديث حالة مشاهدة المسؤول (إذا لم تكن موجودة)
+            if (!statusTimeline.viewed) {
+                statusTimeline.viewed = {
+                    status: "تمت المشاهدة من المسؤول",
+                    time: currentTime,
+                    timestamp: currentTimestamp
+                };
+            }
+            
+            // تحديث حالة اكتمال الطلب
+            statusTimeline.completed = {
+                status: "مكتمل",
+                time: currentTime,
+                timestamp: currentTimestamp
+            };
+            
             const updates = {
                 reply: reply,
                 status: "مكتمل",
-                replyTimestamp: new Date().toLocaleString('ar-EG')
+                replyTimestamp: currentTime,
+                statusTimeline: statusTimeline
             };
             
             // إضافة ملاحظات المسؤول إن وجدت
