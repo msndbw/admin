@@ -48,6 +48,17 @@
             animation: pulseWarning 2s infinite;
         }
         
+        .order-card.completed {
+            border-right: 6px solid #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
+            opacity: 0.9;
+        }
+        
+        .order-card.pending {
+            border-right: 6px solid #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+        }
+        
         @keyframes pulseWarning {
             0%, 100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1); }
             50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2); }
@@ -496,6 +507,117 @@
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
         }
+        
+        /* تحسينات للهاتف */
+        .section-divider {
+            margin: 20px 0;
+            padding: 10px 0;
+            position: relative;
+        }
+        
+        .section-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+        }
+        
+        .section-title {
+            background: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            position: relative;
+            z-index: 1;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .pending-section {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+        
+        .completed-section {
+            color: #10b981;
+            border-color: #10b981;
+        }
+        
+        .order-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .order-info-row .label {
+            color: #64748b;
+            font-size: 13px;
+        }
+        
+        .order-info-row .value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        /* تحسينات للأداء على الهاتف */
+        .order-card {
+            transform: translateZ(0);
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+        
+        /* مؤشر التحميل أثناء الفلترة */
+        .filter-loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .filter-loading.active {
+            display: block;
+        }
+        
+        .spinner-small {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* تحسينات للمعالجة على الهاتف */
+        @media (max-width: 768px) {
+            .order-card {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            .section-divider {
+                margin: 16px 0;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -892,6 +1014,12 @@
                     </div>
                 </div>
 
+                <!-- مؤشر التحميل أثناء الفلترة -->
+                <div id="filter-loading" class="filter-loading">
+                    <span>جاري التحميل...</span>
+                    <div class="spinner-small"></div>
+                </div>
+
                 <!-- حاوية بطاقات الطلبات -->
                 <div id="orders-cards-container">
                     <!-- سيتم إضافة البطاقات هنا ديناميكياً -->
@@ -1019,6 +1147,8 @@
         let notifications = [];
         let selectedImageFile = null;
         let imagePreviewUrl = null;
+        let filterTimeout = null;
+        let isFiltering = false;
 
         // دالة عرض الإشعار العائم
         function showPushNotification(title, message, type = 'info') {
@@ -1812,204 +1942,327 @@
             });
         }
 
-        // دالة عرض الطلبات
+        // دالة عرض الطلبات مع ترتيب محسّن
         function displayOrders(orders) {
+            if (isFiltering) {
+                return; // تجنب التحديثات المتعددة المتزامنة
+            }
+            
             const container = document.getElementById('orders-cards-container');
             const searchTerm = document.getElementById('search-box').value.toLowerCase();
             const filter = document.getElementById('filter-status').value;
             
-            // تصفية الطلبات
-            let filteredOrders = orders.filter(o => {
-                if (currentUser.role !== 'admin' && o.sender !== currentUser.name) return false;
-                if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm) && !o.notes.toLowerCase().includes(searchTerm)) return false;
-                if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
-                if (filter && filter !== 'duplicate' && o.status !== filter) return false;
-                return true;
-            });
+            // إظهار مؤشر التحميل على الهاتف
+            const isMobile = window.innerWidth < 768;
+            const loadingIndicator = document.getElementById('filter-loading');
             
-            if (filteredOrders.length === 0) {
+            if (isMobile) {
+                isFiltering = true;
+                loadingIndicator.classList.add('active');
+                
+                // استخدام setTimeout لتجنب تجميد واجهة المستخدم
+                setTimeout(() => {
+                    performFilterAndDisplay(orders, container, searchTerm, filter, isMobile);
+                }, 50);
+            } else {
+                performFilterAndDisplay(orders, container, searchTerm, filter, isMobile);
+            }
+        }
+
+        // دالة تنفيذ الفلترة والعرض
+        function performFilterAndDisplay(orders, container, searchTerm, filter, isMobile) {
+            try {
+                // تصفية الطلبات
+                let filteredOrders = orders.filter(o => {
+                    if (currentUser.role !== 'admin' && o.sender !== currentUser.name) return false;
+                    if (searchTerm && !o.subjectName.toLowerCase().includes(searchTerm) && !o.notes.toLowerCase().includes(searchTerm)) return false;
+                    if (filter === 'duplicate' && !o.isDuplicate && !o.hasDuplicates) return false;
+                    if (filter && filter !== 'duplicate' && o.status !== filter) return false;
+                    return true;
+                });
+                
+                // تحسين الترتيب: الطلبات قيد المراجعة أولاً، ثم المكتملة
+                filteredOrders.sort((a, b) => {
+                    // أولاً: ترتيب حسب الحالة (قيد المراجعة أولاً)
+                    if (a.status === 'قيد المراجعة' && b.status !== 'قيد المراجعة') return -1;
+                    if (a.status !== 'قيد المراجعة' && b.status === 'قيد المراجعة') return 1;
+                    
+                    // ثانياً: ترتيب حسب التاريخ (الأحدث أولاً)
+                    return (b.timestampOrder || 0) - (a.timestampOrder || 0);
+                });
+                
+                if (filteredOrders.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
+                            <p class="text-lg font-medium">لا توجد طلبات لعرضها</p>
+                        </div>
+                    `;
+                    updateDuplicateCounter();
+                    isFiltering = false;
+                    document.getElementById('filter-loading').classList.remove('active');
+                    return;
+                }
+                
+                // تجميع البطاقات في أقسام
+                let cardsHTML = '';
+                let hasPending = false;
+                let hasCompleted = false;
+                
+                // قسم الطلبات قيد المراجعة
+                let pendingOrders = filteredOrders.filter(o => o.status === 'قيد المراجعة');
+                if (pendingOrders.length > 0 && (!filter || filter === '' || filter === 'قيد المراجعة')) {
+                    hasPending = true;
+                    cardsHTML += `
+                        <div class="section-divider">
+                            <div class="section-title pending-section">
+                                <i class="fas fa-clock ml-2"></i>
+                                الطلبات قيد المراجعة (${pendingOrders.length})
+                            </div>
+                        </div>
+                    `;
+                    
+                    pendingOrders.forEach((order) => {
+                        cardsHTML += generateOrderCardHTML(order);
+                    });
+                }
+                
+                // قسم الطلبات المكتملة
+                let completedOrders = filteredOrders.filter(o => o.status === 'مكتمل');
+                if (completedOrders.length > 0 && (!filter || filter === '' || filter === 'مكتمل')) {
+                    hasCompleted = true;
+                    if (hasPending) {
+                        cardsHTML += `
+                            <div class="section-divider">
+                                <div class="section-title completed-section">
+                                    <i class="fas fa-check-circle ml-2"></i>
+                                    الطلبات المكتملة (${completedOrders.length})
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        cardsHTML += `
+                            <div class="section-divider">
+                                <div class="section-title completed-section">
+                                    <i class="fas fa-check-circle ml-2"></i>
+                                    الطلبات المكتملة (${completedOrders.length})
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    completedOrders.forEach((order) => {
+                        cardsHTML += generateOrderCardHTML(order);
+                    });
+                }
+                
+                // إذا كان هناك فلتر محدد ولم تظهر أي أقسام
+                if ((filter === 'قيد المراجعة' && !hasPending) || (filter === 'مكتمل' && !hasCompleted)) {
+                    const filterName = filter === 'قيد المراجعة' ? 'قيد المراجعة' : 'المكتملة';
+                    cardsHTML = `
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
+                            <p class="text-lg font-medium">لا توجد طلبات ${filterName}</p>
+                        </div>
+                    `;
+                }
+                
+                // تحديث واجهة المستخدم مع التحسين للأداء
+                if (isMobile) {
+                    // على الهاتف، استخدام requestAnimationFrame لتحسين الأداء
+                    requestAnimationFrame(() => {
+                        container.innerHTML = cardsHTML;
+                        updateDuplicateCounter();
+                        isFiltering = false;
+                        document.getElementById('filter-loading').classList.remove('active');
+                    });
+                } else {
+                    container.innerHTML = cardsHTML;
+                    updateDuplicateCounter();
+                    isFiltering = false;
+                    document.getElementById('filter-loading').classList.remove('active');
+                }
+            } catch (error) {
+                console.error("خطأ في عرض الطلبات:", error);
                 container.innerHTML = `
-                    <div class="text-center py-12 text-gray-500">
-                        <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
-                        <p class="text-lg font-medium">لا توجد طلبات لعرضها</p>
+                    <div class="text-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                        <p class="text-lg font-medium">حدث خطأ في عرض الطلبات</p>
+                        <p class="text-sm mt-2">يرجى تحديث الصفحة</p>
                     </div>
                 `;
-                return;
+                isFiltering = false;
+                document.getElementById('filter-loading').classList.remove('active');
+            }
+        }
+
+        // دالة إنشاء HTML لبطاقة الطلب
+        function generateOrderCardHTML(order) {
+            const isDuplicate = order.isDuplicate || order.hasDuplicates;
+            const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
+            const duplicateClass = isDuplicate ? 'duplicate' : '';
+            
+            const statusBadge = order.status === 'مكتمل' 
+                ? '<span class="badge badge-success"><i class="fas fa-check-circle ml-1"></i> مكتمل</span>'
+                : '<span class="badge badge-warning"><i class="fas fa-clock ml-1"></i> قيد المراجعة</span>';
+            
+            const duplicateBadge = isDuplicate ? `
+                <div class="duplicate-badge">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    مكرر
+                </div>
+            ` : '';
+            
+            const categoryDisplay = order.category 
+                ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">فئة ${order.category}</span>`
+                : '<span class="text-gray-400">-</span>';
+            
+            const joinDateDisplay = order.joinDate 
+                ? order.joinDate 
+                : '<span class="text-gray-400">-</span>';
+            
+            const notesDisplay = order.notes 
+                ? `<div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                      <span class="text-xs text-gray-500 font-medium">ملاحظات المرسل:</span>
+                      <p class="text-gray-700 text-sm mt-1">${order.notes}</p>
+                   </div>`
+                : '';
+            
+            // عرض الصورة إن وجدت
+            let imageDisplay = '';
+            if (order.imageData) {
+                imageDisplay = `
+                    <div class="mt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">
+                                <i class="fas fa-image ml-1"></i> الصورة المرفقة:
+                            </span>
+                            <span class="text-xs text-gray-500">${order.imageName || ''}</span>
+                        </div>
+                        <img src="${order.imageData}" 
+                             alt="صورة الطلب" 
+                             class="order-image"
+                             onclick="openImageModal('${order.imageData}')"
+                             title="انقر لعرض الصورة بالحجم الكامل">
+                    </div>
+                `;
             }
             
-            let cardsHTML = '';
-            filteredOrders.forEach((order) => {
-                const isDuplicate = order.isDuplicate || order.hasDuplicates;
-                const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
-                const duplicateClass = isDuplicate ? 'duplicate' : '';
+            // معلومات التكرار
+            let duplicateInfo = '';
+            if (isDuplicate) {
+                const duplicateMsg = order.isDuplicate 
+                    ? '<p class="text-red-600 text-sm font-bold mt-2"><i class="fas fa-exclamation-triangle ml-1"></i> تم إرسال هذا الطلب مع تحذير التكرار</p>'
+                    : '<p class="text-amber-600 text-sm font-bold mt-2"><i class="fas fa-clone ml-1"></i> هناك طلبات أخرى بنفس البيانات</p>';
                 
-                const statusBadge = order.status === 'مكتمل' 
-                    ? '<span class="badge badge-success"><i class="fas fa-check-circle ml-1"></i> مكتمل</span>'
-                    : '<span class="badge badge-warning"><i class="fas fa-clock ml-1"></i> قيد المراجعة</span>';
-                
-                const duplicateBadge = isDuplicate ? `
-                    <div class="duplicate-badge">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        مكرر
-                    </div>
-                ` : '';
-                
-                const categoryDisplay = order.category 
-                    ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">فئة ${order.category}</span>`
-                    : '<span class="text-gray-400">-</span>';
-                
-                const joinDateDisplay = order.joinDate 
-                    ? order.joinDate 
-                    : '<span class="text-gray-400">-</span>';
-                
-                const notesDisplay = order.notes 
-                    ? `<div class="mt-2 p-3 bg-gray-50 rounded-lg">
-                          <span class="text-xs text-gray-500 font-medium">ملاحظات المرسل:</span>
-                          <p class="text-gray-700 text-sm mt-1">${order.notes}</p>
-                       </div>`
-                    : '';
-                
-                // عرض الصورة إن وجدت
-                let imageDisplay = '';
-                if (order.imageData) {
-                    imageDisplay = `
-                        <div class="mt-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700">
-                                    <i class="fas fa-image ml-1"></i> الصورة المرفقة:
-                                </span>
-                                <span class="text-xs text-gray-500">${order.imageName || ''}</span>
-                            </div>
-                            <img src="${order.imageData}" 
-                                 alt="صورة الطلب" 
-                                 class="order-image"
-                                 onclick="openImageModal('${order.imageData}')"
-                                 title="انقر لعرض الصورة بالحجم الكامل">
-                        </div>
-                    `;
-                }
-                
-                // معلومات التكرار
-                let duplicateInfo = '';
-                if (isDuplicate) {
-                    const duplicateMsg = order.isDuplicate 
-                        ? '<p class="text-red-600 text-sm font-bold mt-2"><i class="fas fa-exclamation-triangle ml-1"></i> تم إرسال هذا الطلب مع تحذير التكرار</p>'
-                        : '<p class="text-amber-600 text-sm font-bold mt-2"><i class="fas fa-clone ml-1"></i> هناك طلبات أخرى بنفس البيانات</p>';
-                    
-                    duplicateInfo = `
-                        <div class="mt-3 p-3 border border-red-200 rounded-lg bg-red-50">
-                            <p class="text-red-700 text-sm font-bold flex items-center gap-2">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                تنبيه: بيانات مشابهة لطلبات سابقة
-                            </p>
-                            ${duplicateMsg}
-                        </div>
-                    `;
-                }
-                
-                // عرض ملاحظات المسؤول إن وجدت
-                const adminNotesDisplay = order.adminNotes ? `
-                    <div class="mt-4 p-4 bg-purple-50 rounded-xl">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium text-purple-700">
-                                <i class="fas fa-sticky-note ml-1"></i> ملاحظات المسؤول:
-                            </span>
-                        </div>
-                        <div class="admin-notes-content">
-                            ${order.adminNotes}
-                        </div>
-                    </div>
-                ` : '';
-                
-                let actionsHTML = '';
-                if (currentUser.role === 'admin') {
-                    actionsHTML = `
-                        <div class="flex gap-2 mt-4">
-                            <button onclick="openReplyModal('${order.id}')" class="flex-1 btn btn-primary py-2 text-sm">
-                                <i class="fas fa-reply ml-1"></i> رد المسؤول
-                            </button>
-                            <button onclick="deleteOrder('${order.id}')" class="btn btn-danger px-4">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                } else if (order.sender === currentUser.name && order.status === "قيد المراجعة") {
-                    actionsHTML = `
-                        <div class="flex gap-2 mt-4">
-                            <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
-                                <i class="fas fa-trash ml-1"></i> حذف الطلب
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                cardsHTML += `
-                    <div class="order-card ${statusClass} ${duplicateClass}" data-id="${order.id}">
-                        ${duplicateBadge}
-                        
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-800 text-lg">${order.subjectName}</h4>
-                                <p class="text-gray-600 text-sm mt-1">
-                                    <i class="far fa-user ml-1"></i> ${order.sender}
-                                </p>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                ${statusBadge}
-                                <span class="text-xs text-gray-500 mt-2">${order.timestamp}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-2">
-                            <div class="info-row">
-                                <span class="label">الجنس:</span>
-                                <span class="value">${order.gender || '-'}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">تاريخ الميلاد:</span>
-                                <span class="value">${order.birth || '-'}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">تاريخ الانتساب:</span>
-                                <span class="value">${joinDateDisplay}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">الفئة:</span>
-                                <span class="value">${categoryDisplay}</span>
-                            </div>
-                        </div>
-                        
-                        ${imageDisplay}
-                        ${notesDisplay}
-                        ${duplicateInfo}
-                        
-                        <div class="mt-4 p-4 bg-blue-50 rounded-xl">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-blue-700">
-                                    <i class="fas fa-comment-dots ml-1"></i> رد المسؤول:
-                                </span>
-                                ${order.reply ? `
-                                    <button onclick="copyReply('${order.id}')" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700">
-                                        <i class="far fa-copy ml-1"></i> نسخ
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div class="reply-content">
-                                ${order.reply || 'بانتظار رد المسؤول...'}
-                            </div>
-                        </div>
-                        
-                        ${adminNotesDisplay}
-                        
-                        ${actionsHTML}
+                duplicateInfo = `
+                    <div class="mt-3 p-3 border border-red-200 rounded-lg bg-red-50">
+                        <p class="text-red-700 text-sm font-bold flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            تنبيه: بيانات مشابهة لطلبات سابقة
+                        </p>
+                        ${duplicateMsg}
                     </div>
                 `;
-            });
+            }
             
-            container.innerHTML = cardsHTML;
+            // عرض ملاحظات المسؤول إن وجدت
+            const adminNotesDisplay = order.adminNotes ? `
+                <div class="mt-4 p-4 bg-purple-50 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-purple-700">
+                            <i class="fas fa-sticky-note ml-1"></i> ملاحظات المسؤول:
+                        </span>
+                    </div>
+                    <div class="admin-notes-content">
+                        ${order.adminNotes}
+                    </div>
+                </div>
+            ` : '';
             
-            // تحديث عداد الطلبات المكررة
-            updateDuplicateCounter();
+            let actionsHTML = '';
+            if (currentUser.role === 'admin') {
+                actionsHTML = `
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="openReplyModal('${order.id}')" class="flex-1 btn btn-primary py-2 text-sm">
+                            <i class="fas fa-reply ml-1"></i> رد المسؤول
+                        </button>
+                        <button onclick="deleteOrder('${order.id}')" class="btn btn-danger px-4">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            } else if (order.sender === currentUser.name && order.status === "قيد المراجعة") {
+                actionsHTML = `
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
+                            <i class="fas fa-trash ml-1"></i> حذف الطلب
+                        </button>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="order-card ${statusClass} ${duplicateClass}" data-id="${order.id}">
+                    ${duplicateBadge}
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg">${order.subjectName}</h4>
+                            <p class="text-gray-600 text-sm mt-1">
+                                <i class="far fa-user ml-1"></i> ${order.sender}
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            ${statusBadge}
+                            <span class="text-xs text-gray-500 mt-2">${order.timestamp}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="order-info-row">
+                            <span class="label">الجنس:</span>
+                            <span class="value">${order.gender || '-'}</span>
+                        </div>
+                        <div class="order-info-row">
+                            <span class="label">تاريخ الميلاد:</span>
+                            <span class="value">${order.birth || '-'}</span>
+                        </div>
+                        <div class="order-info-row">
+                            <span class="label">تاريخ الانتساب:</span>
+                            <span class="value">${joinDateDisplay}</span>
+                        </div>
+                        <div class="order-info-row">
+                            <span class="label">الفئة:</span>
+                            <span class="value">${categoryDisplay}</span>
+                        </div>
+                    </div>
+                    
+                    ${imageDisplay}
+                    ${notesDisplay}
+                    ${duplicateInfo}
+                    
+                    <div class="mt-4 p-4 bg-blue-50 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-blue-700">
+                                <i class="fas fa-comment-dots ml-1"></i> رد المسؤول:
+                            </span>
+                            ${order.reply ? `
+                                <button onclick="copyReply('${order.id}')" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700">
+                                    <i class="far fa-copy ml-1"></i> نسخ
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="reply-content">
+                            ${order.reply || 'بانتظار رد المسؤول...'}
+                        </div>
+                    </div>
+                    
+                    ${adminNotesDisplay}
+                    
+                    ${actionsHTML}
+                </div>
+            `;
         }
 
         // دالة تحديث عداد الطلبات المكررة
@@ -2022,13 +2275,26 @@
             }
         }
 
-        // دالة إعداد البحث والتصفية
+        // دالة إعداد البحث والتصفية مع تحسينات للأداء
         function setupSearchAndFilter() {
             const searchBox = document.getElementById('search-box');
             const filterStatus = document.getElementById('filter-status');
             
-            searchBox.addEventListener('input', () => displayOrders(allOrders));
-            filterStatus.addEventListener('change', () => displayOrders(allOrders));
+            // تحسين البحث مع تأخير debounce لتجنب التحميل الزائد
+            searchBox.addEventListener('input', () => {
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(() => {
+                    displayOrders(allOrders);
+                }, window.innerWidth < 768 ? 300 : 150); // وقت أطول على الهاتف
+            });
+            
+            // تحسين الفلترة مع معالجة أفضل للأداء
+            filterStatus.addEventListener('change', () => {
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(() => {
+                    displayOrders(allOrders);
+                }, window.innerWidth < 768 ? 100 : 50); // وقت أقل للفلترة
+            });
         }
 
         // دالة تحديث الإحصائيات
