@@ -670,68 +670,177 @@
             background: #e2e8f0;
         }
         
-        /* تصاميم جديدة لإضافة خيارات المسؤول */
-        .admin-dashboard-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
+        /* تصميمات جديدة للنافذة الجانبية */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(5px);
         }
         
-        .user-selection-card {
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        .sidebar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 380px;
+            max-width: 90%;
             background: white;
-            border-radius: 12px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        
-        .user-selection-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-color: #3b82f6;
-        }
-        
-        .user-selection-card.active {
-            border-color: #3b82f6;
-            background: #f0f9ff;
-        }
-        
-        .user-stats {
+            z-index: 2001;
             display: flex;
-            gap: 10px;
-            margin-top: 8px;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
         
-        .user-stat {
+        .sidebar-container.active {
+            transform: translateX(0);
+        }
+        
+        @media (min-width: 1024px) {
+            .sidebar-container {
+                width: 420px;
+            }
+        }
+        
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        
+        .close-sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .close-sidebar:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        /* تصميمات البطاقات داخل النافذة الجانبية */
+        .user-card-sidebar {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-right: 4px solid #3b82f6;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .user-card-sidebar:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-card-sidebar.active {
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, #f5f3ff 0%, #fef7ff 100%);
+        }
+        
+        .user-card-stats {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .user-card-stat {
             font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            background: #f1f5f9;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 700;
         }
         
-        .user-stat.pending {
+        .user-card-stat.pending {
             background: #fef3c7;
             color: #92400e;
         }
         
-        .user-stat.completed {
+        .user-card-stat.completed {
             background: #d1fae5;
             color: #065f46;
         }
         
-        .user-stat.duplicate {
+        .user-card-stat.duplicate {
             background: #fee2e2;
             color: #dc2626;
         }
         
-        /* تصاميم خاصة بخيار التركيز على مستخدم */
+        /* تحسينات للهاتف في النافذة الجانبية */
+        @media (max-width: 640px) {
+            .sidebar-container {
+                max-width: 85%;
+            }
+            
+            .user-card-sidebar {
+                padding: 14px;
+            }
+            
+            .sidebar-header {
+                padding: 20px;
+            }
+        }
+        
+        /* زر فتح النافذة الجانبية في شريط التنقل */
+        .users-btn {
+            position: relative;
+        }
+        
+        .users-badge {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        /* تصاميم خيار التركيز على مستخدم */
         .focus-user-header {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
@@ -760,8 +869,8 @@
             font-size: 24px;
         }
         
-        /* تحسينات شريط التبويب */
-        .tabs {
+        /* شريط التبويب داخل النافذة الجانبية */
+        .sidebar-tabs {
             display: flex;
             gap: 5px;
             background: #f1f5f9;
@@ -770,7 +879,7 @@
             margin-bottom: 20px;
         }
         
-        .tab {
+        .sidebar-tab {
             flex: 1;
             padding: 12px;
             text-align: center;
@@ -780,7 +889,7 @@
             transition: all 0.3s ease;
         }
         
-        .tab.active {
+        .sidebar-tab.active {
             background: white;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             color: #3b82f6;
@@ -866,6 +975,16 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <!-- زر المستخدمين (للمسؤول فقط) -->
+                    <button 
+                        id="users-btn" 
+                        onclick="toggleUsersSidebar()" 
+                        class="users-btn hidden relative p-3 text-gray-600 hover:text-blue-600 transition-colors"
+                    >
+                        <i class="fas fa-users text-xl"></i>
+                        <span id="users-badge" class="users-badge hidden">0</span>
+                    </button>
+                    
                     <!-- زر الإشعارات -->
                     <button 
                         onclick="toggleNotifications()" 
@@ -899,6 +1018,74 @@
                 </div>
             </div>
         </header>
+
+        <!-- النافذة الجانبية لطلبات كل مستخدم (للمسؤول فقط) -->
+        <div id="users-sidebar-overlay" class="sidebar-overlay" onclick="closeUsersSidebar()"></div>
+        <div id="users-sidebar" class="sidebar-container">
+            <div class="sidebar-header">
+                <button onclick="closeUsersSidebar()" class="close-sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-users text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">📋 إدارة المستخدمين</h2>
+                        <p class="text-white text-opacity-90 text-sm">عرض وتتبع طلبات جميع المستخدمين</p>
+                    </div>
+                </div>
+                
+                <!-- شريط التبويب داخل النافذة الجانبية -->
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" onclick="switchSidebarTab('users-list')">
+                        <i class="fas fa-list ml-2"></i> قائمة المستخدمين
+                    </div>
+                    <div class="sidebar-tab" onclick="switchSidebarTab('user-stats')">
+                        <i class="fas fa-chart-bar ml-2"></i> الإحصائيات
+                    </div>
+                    <div class="sidebar-tab" onclick="switchSidebarTab('focus-user')">
+                        <i class="fas fa-user-check ml-2"></i> التركيز على مستخدم
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- تبويب قائمة المستخدمين -->
+                <div id="sidebar-tab-users-list" class="sidebar-tab-content">
+                    <div id="users-list-sidebar" class="space-y-3">
+                        <!-- سيتم تعبئة قائمة المستخدمين هنا ديناميكياً -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                            <p>جاري تحميل قائمة المستخدمين...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- تبويب إحصائيات المستخدمين -->
+                <div id="sidebar-tab-user-stats" class="sidebar-tab-content hidden">
+                    <div id="user-stats-sidebar" class="space-y-4">
+                        <!-- سيتم تعبئة الإحصائيات هنا ديناميكياً -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-chart-bar text-2xl mb-3"></i>
+                            <p>جاري تحليل إحصائيات المستخدمين...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- تبويب التركيز على مستخدم -->
+                <div id="sidebar-tab-focus-user" class="sidebar-tab-content hidden">
+                    <div id="focus-user-sidebar">
+                        <!-- سيتم تعبئة محتوى التركيز على مستخدم هنا ديناميكياً -->
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-user text-3xl mb-3 text-gray-300"></i>
+                            <p class="text-lg font-medium">اختر مستخدمًا للتركيز على طلباته</p>
+                            <p class="text-sm text-gray-400 mt-2">انقر على أي مستخدم من قائمة "المستخدمين"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- محتوى التطبيق -->
         <main class="max-w-6xl mx-auto px-4 pb-24">
@@ -942,63 +1129,6 @@
                                 <h3 id="stat-duplicate" class="text-3xl font-bold text-red-600">0</h3>
                             </div>
                             <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- لوحة تحكم المسؤول - عرض طلبات كل مستخدم -->
-                <div id="admin-user-controls" class="hidden mb-8">
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-users text-white text-lg"></i>
-                            </div>
-                            <h2 class="text-xl font-bold text-gray-800">📋 طلبات كل مستخدم</h2>
-                        </div>
-                        
-                        <!-- شريط التبويب -->
-                        <div class="tabs mb-6">
-                            <div class="tab active" onclick="switchAdminTab('all-users')">
-                                جميع المستخدمين
-                            </div>
-                            <div class="tab" onclick="switchAdminTab('focus-user')">
-                                التركيز على مستخدم
-                            </div>
-                            <div class="tab" onclick="switchAdminTab('user-stats')">
-                                إحصائيات المستخدمين
-                            </div>
-                        </div>
-                        
-                        <!-- تبويب جميع المستخدمين -->
-                        <div id="tab-all-users" class="admin-tab-content">
-                            <div class="admin-dashboard-controls" id="users-list-container">
-                                <!-- سيتم تعبئة قائمة المستخدمين هنا ديناميكياً -->
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
-                                    <p>جاري تحميل قائمة المستخدمين...</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- تبويب التركيز على مستخدم -->
-                        <div id="tab-focus-user" class="admin-tab-content hidden">
-                            <div id="focus-user-container">
-                                <div class="text-center py-12 text-gray-500">
-                                    <i class="fas fa-user text-3xl mb-3 text-gray-300"></i>
-                                    <p class="text-lg font-medium">اختر مستخدمًا للتركيز على طلباته</p>
-                                    <p class="text-sm text-gray-400 mt-2">انقر على أي مستخدم من قائمة "جميع المستخدمين"</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- تبويب إحصائيات المستخدمين -->
-                        <div id="tab-user-stats" class="admin-tab-content hidden">
-                            <div id="user-stats-container">
-                                <div class="text-center py-12 text-gray-500">
-                                    <i class="fas fa-chart-bar text-3xl mb-3 text-gray-300"></i>
-                                    <p class="text-lg font-medium">جاري تحليل إحصائيات المستخدمين...</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1244,13 +1374,13 @@
                         </span>
                     </div>
                     
-                    <!-- زر العودة للمسؤول -->
+                    <!-- زر العودة للجميع (عند التركيز على مستخدم) -->
                     <button 
-                        id="back-to-all-users-btn" 
-                        onclick="backToAllUsers()" 
+                        id="back-to-all-btn" 
+                        onclick="backToAllOrders()" 
                         class="hidden btn btn-secondary"
                     >
-                        <i class="fas fa-arrow-right ml-1"></i> العودة لجميع المستخدمين
+                        <i class="fas fa-arrow-right ml-1"></i> العودة لجميع الطلبات
                     </button>
                     
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
@@ -1417,7 +1547,7 @@
         
         // متغيرات جديدة للإدارة
         let currentFocusedUser = null;
-        let currentAdminTab = 'all-users';
+        let currentSidebarTab = 'users-list';
         let usersStats = {};
 
         // دالة عرض الإشعار العائم
@@ -1548,13 +1678,14 @@
             // إظهار الأقسام المناسبة
             if (currentUser.role === 'admin') {
                 document.getElementById('admin-stats').classList.remove('hidden');
-                document.getElementById('admin-user-controls').classList.remove('hidden');
+                document.getElementById('users-btn').classList.remove('hidden');
                 document.getElementById('user-section').classList.add('hidden');
                 document.getElementById('orders-section-title').innerText = 'سجل جميع الطلبات';
-                document.getElementById('back-to-all-users-btn').classList.add('hidden');
+                document.getElementById('back-to-all-btn').classList.add('hidden');
+                updateUsersBadge();
             } else {
                 document.getElementById('admin-stats').classList.add('hidden');
-                document.getElementById('admin-user-controls').classList.add('hidden');
+                document.getElementById('users-btn').classList.add('hidden');
                 document.getElementById('user-section').classList.remove('hidden');
                 document.getElementById('orders-section-title').innerText = 'سجل طلباتك';
             }
@@ -2283,9 +2414,10 @@
                 displayOrders(allOrders);
                 updateStats(stats);
                 
-                // تحديث لوحة تحكم المسؤول
+                // تحديث النافذة الجانبية للمسؤول
                 if (currentUser.role === 'admin') {
-                    updateAdminDashboard();
+                    updateUsersSidebar();
+                    updateUsersBadge();
                 }
             });
         }
@@ -2328,23 +2460,33 @@
             });
         }
 
-        // دالة تحديث لوحة تحكم المسؤول
-        function updateAdminDashboard() {
-            if (currentAdminTab === 'all-users') {
-                displayUsersList();
-            } else if (currentAdminTab === 'user-stats') {
-                displayUserStatistics();
-            }
-            
-            // تحديث واجهة التركيز على مستخدم إذا كان نشطاً
-            if (currentFocusedUser) {
-                displayFocusedUserOrders();
+        // دالة تحديث النافذة الجانبية
+        function updateUsersSidebar() {
+            if (currentSidebarTab === 'users-list') {
+                displayUsersListSidebar();
+            } else if (currentSidebarTab === 'user-stats') {
+                displayUserStatisticsSidebar();
+            } else if (currentSidebarTab === 'focus-user') {
+                displayFocusedUserSidebar();
             }
         }
 
-        // دالة عرض قائمة المستخدمين
-        function displayUsersList() {
-            const container = document.getElementById('users-list-container');
+        // دالة تحديث شارة المستخدمين
+        function updateUsersBadge() {
+            const badge = document.getElementById('users-badge');
+            const activeUsers = Object.keys(usersStats).length;
+            
+            if (activeUsers > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = activeUsers > 99 ? '99+' : activeUsers;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // دالة عرض قائمة المستخدمين في النافذة الجانبية
+        function displayUsersListSidebar() {
+            const container = document.getElementById('users-list-sidebar');
             
             // الحصول على قائمة المستخدمين الفعليين من الطلبات
             const activeUsers = Object.keys(usersStats);
@@ -2366,8 +2508,8 @@
                 const isCurrentFocused = currentFocusedUser === userName;
                 
                 usersHTML += `
-                    <div class="user-selection-card ${isCurrentFocused ? 'active' : ''}" 
-                         onclick="focusOnUser('${userName}')">
+                    <div class="user-card-sidebar ${isCurrentFocused ? 'active' : ''}" 
+                         onclick="focusOnUserFromSidebar('${userName}')">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h4 class="font-bold text-gray-800">${userName}</h4>
@@ -2375,10 +2517,10 @@
                             </div>
                             <div class="text-xs text-gray-500">آخر طلب: ${stats.lastOrderDate}</div>
                         </div>
-                        <div class="user-stats">
-                            <span class="user-stat pending">${stats.pending} قيد المراجعة</span>
-                            <span class="user-stat completed">${stats.completed} مكتمل</span>
-                            ${stats.duplicates > 0 ? `<span class="user-stat duplicate">${stats.duplicates} مكرر</span>` : ''}
+                        <div class="user-card-stats">
+                            <span class="user-card-stat pending">${stats.pending} قيد المراجعة</span>
+                            <span class="user-card-stat completed">${stats.completed} مكتمل</span>
+                            ${stats.duplicates > 0 ? `<span class="user-card-stat duplicate">${stats.duplicates} مكرر</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -2387,32 +2529,67 @@
             container.innerHTML = usersHTML;
         }
 
-        // دالة التركيز على مستخدم معين
-        window.focusOnUser = function(userName) {
-            currentFocusedUser = userName;
+        // دالة عرض إحصائيات المستخدمين في النافذة الجانبية
+        function displayUserStatisticsSidebar() {
+            const container = document.getElementById('user-stats-sidebar');
             
-            // تحديث واجهة المستخدم
-            document.getElementById('orders-section-title').innerText = `طلبات ${userName}`;
-            document.getElementById('back-to-all-users-btn').classList.remove('hidden');
+            const activeUsers = Object.keys(usersStats);
+            if (activeUsers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-chart-bar text-3xl mb-3 text-gray-300"></i>
+                        <p class="text-lg font-medium">لا توجد بيانات لإحصائيات المستخدمين</p>
+                    </div>
+                `;
+                return;
+            }
             
-            // تبديل إلى تبويب التركيز على مستخدم
-            switchAdminTab('focus-user');
+            // ترتيب المستخدمين حسب عدد الطلبات
+            const sortedUsers = activeUsers.sort((a, b) => usersStats[b].total - usersStats[a].total);
             
-            // عرض طلبات المستخدم المحدد
-            displayFocusedUserOrders();
+            let statsHTML = '';
             
-            showPushNotification(`التركيز على ${userName}`, `عرض طلبات المستخدم المحدد`, 'info');
-        };
+            sortedUsers.forEach(userName => {
+                const stats = usersStats[userName];
+                statsHTML += `
+                    <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-gray-800 cursor-pointer hover:text-blue-600" onclick="focusOnUserFromSidebar('${userName}')">
+                                ${userName}
+                            </h4>
+                            <span class="text-sm text-gray-500">${stats.total} طلب</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-amber-50 p-2 rounded-lg">
+                                <div class="text-amber-700 font-bold">${stats.pending}</div>
+                                <div class="text-xs text-amber-600">قيد المراجعة</div>
+                            </div>
+                            <div class="bg-green-50 p-2 rounded-lg">
+                                <div class="text-green-700 font-bold">${stats.completed}</div>
+                                <div class="text-xs text-green-600">مكتمل</div>
+                            </div>
+                            <div class="bg-red-50 p-2 rounded-lg">
+                                <div class="text-red-700 font-bold">${stats.duplicates}</div>
+                                <div class="text-xs text-red-600">مكرر</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = statsHTML;
+        }
 
-        // دالة عرض طلبات المستخدم المحدد
-        function displayFocusedUserOrders() {
-            const container = document.getElementById('focus-user-container');
+        // دالة عرض التركيز على مستخدم في النافذة الجانبية
+        function displayFocusedUserSidebar() {
+            const container = document.getElementById('focus-user-sidebar');
             
             if (!currentFocusedUser) {
                 container.innerHTML = `
                     <div class="text-center py-12 text-gray-500">
                         <i class="fas fa-user text-3xl mb-3 text-gray-300"></i>
                         <p class="text-lg font-medium">اختر مستخدمًا للتركيز على طلباته</p>
+                        <p class="text-sm text-gray-400 mt-2">انقر على أي مستخدم من قائمة "المستخدمين"</p>
                     </div>
                 `;
                 return;
@@ -2429,193 +2606,175 @@
                 return;
             }
             
-            const orders = userStats.orders;
-            orders.sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0));
-            
-            // إنشاء HTML للطلبات
-            let ordersHTML = `
-                <div class="focus-user-header">
-                    <div class="focus-user-info">
-                        <div class="user-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">${currentFocusedUser}</h3>
-                            <div class="flex gap-4 mt-2">
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold">${userStats.total}</div>
-                                    <div class="text-sm opacity-90">إجمالي الطلبات</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold">${userStats.pending}</div>
-                                    <div class="text-sm opacity-90">قيد المراجعة</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold">${userStats.completed}</div>
-                                    <div class="text-sm opacity-90">مكتمل</div>
-                                </div>
+            const focusUserInfo = `
+                <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl p-5 mb-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold">${currentFocusedUser}</h3>
+                                <p class="text-white text-opacity-90">${userStats.total} طلب</p>
                             </div>
                         </div>
+                        <button onclick="backToAllOrders()" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-sm font-bold hover:bg-blue-50">
+                            رجوع
+                        </button>
                     </div>
-                    <button onclick="backToAllUsers()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-50">
-                        العودة للجميع
-                    </button>
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div>
+                            <div class="text-2xl font-bold">${userStats.pending}</div>
+                            <div class="text-xs opacity-90">قيد المراجعة</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold">${userStats.completed}</div>
+                            <div class="text-xs opacity-90">مكتمل</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold">${userStats.duplicates}</div>
+                            <div class="text-xs opacity-90">مكرر</div>
+                        </div>
+                    </div>
                 </div>
+                
+                <div class="space-y-3">
+                    <h4 class="font-bold text-gray-800 text-lg">آخر طلبات ${currentFocusedUser}</h4>
             `;
             
-            if (orders.length === 0) {
-                ordersHTML += `
-                    <div class="text-center py-12 text-gray-500">
-                        <i class="fas fa-inbox text-3xl mb-3 text-gray-300"></i>
-                        <p class="text-lg font-medium">لا توجد طلبات لهذا المستخدم</p>
+            // عرض آخر 5 طلبات للمستخدم
+            const latestOrders = userStats.orders
+                .sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0))
+                .slice(0, 5);
+            
+            let ordersHTML = '';
+            if (latestOrders.length === 0) {
+                ordersHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-2xl mb-3"></i>
+                        <p>لا توجد طلبات</p>
                     </div>
                 `;
             } else {
-                // تقسيم الطلبات حسب الحالة
-                const pendingOrders = orders.filter(o => o.status === "قيد المراجعة");
-                const completedOrders = orders.filter(o => o.status === "مكتمل");
-                
-                if (pendingOrders.length > 0) {
+                latestOrders.forEach(order => {
+                    const statusColor = order.status === 'مكتمل' ? 'text-green-600' : 'text-amber-600';
                     ordersHTML += `
-                        <div class="section-divider">
-                            <div class="section-title pending-section">
-                                <i class="fas fa-clock ml-2"></i>
-                                الطلبات قيد المراجعة (${pendingOrders.length})
+                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-medium text-gray-800 truncate">${order.subjectName}</span>
+                                <span class="text-xs ${statusColor} font-bold">${order.status}</span>
+                            </div>
+                            <div class="text-xs text-gray-600 flex justify-between">
+                                <span>${order.timestamp}</span>
+                                <button onclick="viewOrder('${order.id}')" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-eye ml-1"></i> عرض
+                                </button>
                             </div>
                         </div>
                     `;
-                    
-                    pendingOrders.forEach(order => {
-                        ordersHTML += generateOrderCardHTML(order);
-                    });
-                }
-                
-                if (completedOrders.length > 0) {
-                    ordersHTML += `
-                        <div class="section-divider">
-                            <div class="section-title completed-section">
-                                <i class="fas fa-check-circle ml-2"></i>
-                                الطلبات المكتملة (${completedOrders.length})
-                            </div>
-                        </div>
-                    `;
-                    
-                    completedOrders.forEach(order => {
-                        ordersHTML += generateOrderCardHTML(order);
-                    });
-                }
+                });
             }
             
-            container.innerHTML = ordersHTML;
+            container.innerHTML = focusUserInfo + ordersHTML + '</div>';
         }
 
-        // دالة العودة لعرض جميع المستخدمين
-        window.backToAllUsers = function() {
-            currentFocusedUser = null;
-            document.getElementById('orders-section-title').innerText = 'سجل جميع الطلبات';
-            document.getElementById('back-to-all-users-btn').classList.add('hidden');
-            switchAdminTab('all-users');
+        // دالة التركيز على مستخدم من النافذة الجانبية
+        window.focusOnUserFromSidebar = function(userName) {
+            currentFocusedUser = userName;
+            
+            // تحديث الواجهة الرئيسية
+            document.getElementById('orders-section-title').innerText = `طلبات ${userName}`;
+            document.getElementById('back-to-all-btn').classList.remove('hidden');
+            
+            // تحديث النافذة الجانبية
+            switchSidebarTab('focus-user');
+            
+            // تحديث قائمة الطلبات
             displayOrders(allOrders);
+            
+            showPushNotification(`التركيز على ${userName}`, `عرض طلبات المستخدم المحدد`, 'info');
         };
 
-        // دالة عرض إحصائيات المستخدمين
-        function displayUserStatistics() {
-            const container = document.getElementById('user-stats-container');
+        // دالة عرض تفاصيل الطلب
+        window.viewOrder = function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
             
-            const activeUsers = Object.keys(usersStats);
-            if (activeUsers.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 text-gray-500">
-                        <i class="fas fa-chart-bar text-3xl mb-3 text-gray-300"></i>
-                        <p class="text-lg font-medium">لا توجد بيانات لإحصائيات المستخدمين</p>
-                    </div>
-                `;
-                return;
+            // فتح نافذة عرض الطلب
+            openReplyModal(orderId);
+        };
+
+        // دالة العودة لعرض جميع الطلبات
+        window.backToAllOrders = function() {
+            currentFocusedUser = null;
+            document.getElementById('orders-section-title').innerText = currentUser.role === 'admin' ? 'سجل جميع الطلبات' : 'سجل طلباتك';
+            document.getElementById('back-to-all-btn').classList.add('hidden');
+            
+            // إذا كانت النافذة الجانبية مفتوحة، العودة لقائمة المستخدمين
+            if (document.getElementById('users-sidebar').classList.contains('active')) {
+                switchSidebarTab('users-list');
             }
             
-            // ترتيب المستخدمين حسب عدد الطلبات
-            const sortedUsers = activeUsers.sort((a, b) => usersStats[b].total - usersStats[a].total);
+            // تحديث قائمة الطلبات
+            displayOrders(allOrders);
             
-            let statsHTML = `
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-500">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3">المستخدم</th>
-                                <th scope="col" class="px-6 py-3 text-center">إجمالي الطلبات</th>
-                                <th scope="col" class="px-6 py-3 text-center">قيد المراجعة</th>
-                                <th scope="col" class="px-6 py-3 text-center">مكتمل</th>
-                                <th scope="col" class="px-6 py-3 text-center">مكرر</th>
-                                <th scope="col" class="px-6 py-3 text-center">آخر طلب</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            sortedUsers.forEach(userName => {
-                const stats = usersStats[userName];
-                statsHTML += `
-                    <tr class="bg-white border-b hover:bg-gray-50 cursor-pointer" onclick="focusOnUser('${userName}')">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                            ${userName}
-                        </th>
-                        <td class="px-6 py-4 text-center font-bold">${stats.total}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold ${stats.pending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'}">
-                                ${stats.pending}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold ${stats.completed > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                ${stats.completed}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold ${stats.duplicates > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
-                                ${stats.duplicates}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center text-xs text-gray-500">${stats.lastOrderDate}</td>
-                    </tr>
-                `;
-            });
-            
-            statsHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            container.innerHTML = statsHTML;
-        }
+            showPushNotification('العودة للجميع', 'عرض جميع الطلبات', 'info');
+        };
 
-        // دالة تبديل تبويبات المسؤول
-        window.switchAdminTab = function(tabName) {
-            currentAdminTab = tabName;
+        // دالة تبديل تبويبات النافذة الجانبية
+        window.switchSidebarTab = function(tabName) {
+            currentSidebarTab = tabName;
             
             // تحديث التبويبات النشطة
-            document.querySelectorAll('.tab').forEach(tab => {
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            document.querySelectorAll('.admin-tab-content').forEach(content => {
+            document.querySelectorAll('.sidebar-tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
             
             // تفعيل التبويب المحدد
-            document.querySelector(`.tab[onclick*="${tabName}"]`).classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.querySelector(`.sidebar-tab[onclick*="${tabName}"]`).classList.add('active');
+            document.getElementById(`sidebar-tab-${tabName}`).classList.remove('hidden');
             
             // تحديث محتوى التبويب
-            if (tabName === 'all-users') {
-                displayUsersList();
-            } else if (tabName === 'user-stats') {
-                displayUserStatistics();
-            } else if (tabName === 'focus-user') {
-                if (currentFocusedUser) {
-                    displayFocusedUserOrders();
-                }
+            updateUsersSidebar();
+        };
+
+        // دالة فتح النافذة الجانبية
+        window.toggleUsersSidebar = function() {
+            const sidebar = document.getElementById('users-sidebar');
+            const overlay = document.getElementById('users-sidebar-overlay');
+            
+            if (sidebar.classList.contains('active')) {
+                closeUsersSidebar();
+            } else {
+                openUsersSidebar();
             }
         };
+
+        // دالة فتح النافذة الجانبية
+        function openUsersSidebar() {
+            const sidebar = document.getElementById('users-sidebar');
+            const overlay = document.getElementById('users-sidebar-overlay');
+            
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            
+            // تحديث محتوى النافذة الجانبية
+            updateUsersSidebar();
+        }
+
+        // دالة إغلاق النافذة الجانبية
+        function closeUsersSidebar() {
+            const sidebar = document.getElementById('users-sidebar');
+            const overlay = document.getElementById('users-sidebar-overlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+
+        window.closeUsersSidebar = closeUsersSidebar;
 
         // دالة الكشف عن التكرار في الطلبات الموجودة
         function detectExistingDuplicates() {
@@ -2674,8 +2833,8 @@
             try {
                 // تصفية الطلبات
                 let filteredOrders = orders.filter(o => {
-                    if (currentUser.role === 'admin' && currentFocusedUser) {
-                        // المسؤول في وضع التركيز على مستخدم
+                    if (currentFocusedUser) {
+                        // التركيز على مستخدم معين
                         if (o.sender !== currentFocusedUser) return false;
                     } else if (currentUser.role !== 'admin' && o.sender !== currentUser.name) {
                         // المستخدم العادي يرى فقط طلباته
@@ -3345,10 +3504,20 @@
             }
         });
 
+        // إغلاق النافذة الجانبية عند النقر خارجها
+        document.getElementById('users-sidebar-overlay').addEventListener('click', function() {
+            closeUsersSidebar();
+        });
+
         // إغلاق مودال الصورة بمفتاح ESC
         document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && !document.getElementById('image-modal').classList.contains('hidden')) {
-                closeImageModal();
+            if (event.key === 'Escape') {
+                if (!document.getElementById('image-modal').classList.contains('hidden')) {
+                    closeImageModal();
+                }
+                if (document.getElementById('users-sidebar').classList.contains('active')) {
+                    closeUsersSidebar();
+                }
             }
         });
 
