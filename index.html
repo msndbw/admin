@@ -82,6 +82,38 @@
             box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
         }
         
+        /* شارة التعديل */
+        .edit-badge {
+            position: absolute;
+            top: -8px;
+            right: 15px;
+            background: #8b5cf6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+        }
+        
+        /* شارة أيقونة الجنس */
+        .gender-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #3b82f6;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-size: 16px;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
         /* نافذة التنبيه */
         .alert-overlay {
             position: fixed;
@@ -277,6 +309,16 @@
         .btn-danger:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
         }
         
         /* زر الإشعارات */
@@ -913,6 +955,55 @@
             font-size: 10px;
             font-weight: bold;
         }
+        
+        /* تنويه التعديل */
+        .edit-notice {
+            background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+            border: 1px solid #fbbf24;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            animation: pulseEdit 2s infinite;
+        }
+        
+        @keyframes pulseEdit {
+            0%, 100% { box-shadow: 0 0 0 rgba(251, 191, 36, 0.1); }
+            50% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
+        }
+        
+        /* زر التعديل */
+        .btn-edit {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        /* مؤقت التعديل */
+        .edit-timer {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #64748b;
+        }
+        
+        .edit-timer.expired {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .edit-timer.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -1153,8 +1244,8 @@
                                 </label>
                                 <select id="gender" required class="w-full">
                                     <option value="">اختر الجنس</option>
-                                    <option value="ذكر">ذكر</option>
-                                    <option value="أنثى">أنثى</option>
+                                    <option value="ذكر">👨‍🦳 ذكر</option>
+                                    <option value="أنثى">👩‍🦳 أنثى</option>
                                 </select>
                             </div>
                             
@@ -1459,6 +1550,41 @@
         </div>
     </div>
 
+    <!-- مودال تعديل الطلب للمستخدم -->
+    <div id="modal-edit-order" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800" id="modal-edit-title">تعديل الطلب</h3>
+                <button 
+                    onclick="closeEditModal()" 
+                    class="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="modal-edit-content" class="space-y-4">
+                <!-- سيتم تعبئة المحتوى ديناميكياً -->
+            </div>
+            
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+                <button 
+                    onclick="closeEditModal()" 
+                    class="flex-1 btn btn-secondary py-3"
+                >
+                    إلغاء
+                </button>
+                <button 
+                    id="modal-edit-save-btn" 
+                    onclick="saveOrderEdit()" 
+                    class="flex-1 btn btn-warning py-3"
+                >
+                    <i class="fas fa-save ml-2"></i> حفظ التعديلات
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- نافذة تنبيه التكرار -->
     <div id="duplicate-alert" class="alert-overlay hidden">
         <div class="alert-modal">
@@ -1589,16 +1715,15 @@
         async function compressImage(file) {
             try {
                 const options = {
-                    maxSizeMB: 0.5, // الحد الأقصى للحجم 0.5 ميجابايت
-                    maxWidthOrHeight: 1024, // الحد الأقصى للعرض أو الارتفاع 1024px
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1024,
                     useWebWorker: true,
-                    fileType: 'image/jpeg', // تحويل الصور إلى JPEG للضغط الأفضل
-                    initialQuality: 0.8, // جودة 80% (متوازنة)
+                    fileType: 'image/jpeg',
+                    initialQuality: 0.8,
                 };
                 
                 const compressedFile = await imageCompression(file, options);
                 
-                // حساب نسبة الضغط
                 const originalSize = (file.size / 1024 / 1024).toFixed(2);
                 const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2);
                 const compressionRatio = Math.round((1 - (compressedFile.size / file.size)) * 100);
@@ -1636,7 +1761,6 @@
             if (usersMap[pass]) {
                 currentUser = usersMap[pass];
                 
-                // حفظ بيانات الجلسة
                 const sessionData = {
                     ...currentUser,
                     loginTime: new Date().toISOString()
@@ -1646,7 +1770,6 @@
                 showDashboard();
                 fetchNotifications();
                 
-                // طلب إذن الإشعارات من المتصفح
                 if (Notification.permission === 'default') {
                     Notification.requestPermission().then(permission => {
                         if (permission === 'granted') {
@@ -1666,7 +1789,6 @@
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             
-            // تحديث معلومات المستخدم
             document.getElementById('user-display-name').innerText = currentUser.name;
             
             const roleBadge = document.getElementById('user-role-badge');
@@ -1675,7 +1797,6 @@
                 ? 'badge badge-success' 
                 : 'badge badge-info';
             
-            // إظهار الأقسام المناسبة
             if (currentUser.role === 'admin') {
                 document.getElementById('admin-stats').classList.remove('hidden');
                 document.getElementById('users-btn').classList.remove('hidden');
@@ -1713,7 +1834,6 @@
                     for (let id in data) {
                         const notif = { id, ...data[id] };
                         
-                        // عرض الإشعارات للمستخدم المناسب
                         if (currentUser.role === 'admin' || 
                             (notif.targetUser === currentUser.name && !notif.read)) {
                             notifications.push(notif);
@@ -1737,7 +1857,6 @@
                 badge.classList.add('hidden');
             }
             
-            // إظهار إشعارات المتصفح للطلبات الجديدة
             showBrowserNotifications();
         }
 
@@ -1747,7 +1866,8 @@
             
             const newNotifications = notifications.filter(n => 
                 !n.read && 
-                (n.type === 'new_order' || n.type === 'order_replied' || n.type === 'order_completed')
+                (n.type === 'new_order' || n.type === 'order_replied' || n.type === 'order_completed' ||
+                 n.type === 'order_edited' || n.type === 'reply_edited')
             );
             
             newNotifications.forEach(notif => {
@@ -1767,6 +1887,14 @@
                             title = '✅ اكتمال الطلب';
                             body = `تم إكمال طلبك بنجاح`;
                             break;
+                        case 'order_edited':
+                            title = '✏️ تعديل الطلب';
+                            body = `تم تعديل الطلب من قبل ${notif.sender}`;
+                            break;
+                        case 'reply_edited':
+                            title = '✏️ تعديل الرد';
+                            body = `تم تعديل الرد على طلبك من قبل المسؤول`;
+                            break;
                     }
                     
                     new Notification(title, {
@@ -1775,11 +1903,9 @@
                         tag: notif.id
                     });
                     
-                    // إشعار عائم
                     showPushNotification(title, body, 'info');
                 }
                 
-                // تحديث حالة الإشعار كمقروء
                 if (!notif.read) {
                     update(ref(db, 'notifications/' + notif.id), { read: true });
                 }
@@ -1811,7 +1937,6 @@
                 return;
             }
             
-            // ترتيب الإشعارات من الأحدث إلى الأقدم
             const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
             
             let listHTML = '';
@@ -1841,6 +1966,16 @@
                         icon = 'fa-exclamation-triangle';
                         color = 'text-red-600';
                         text = `تنبيه: طلب مكرر من ${notif.sender}`;
+                        break;
+                    case 'order_edited':
+                        icon = 'fa-edit';
+                        color = 'text-purple-600';
+                        text = `تم تعديل الطلب من قبل ${notif.sender}`;
+                        break;
+                    case 'reply_edited':
+                        icon = 'fa-edit';
+                        color = 'text-orange-600';
+                        text = `تم تعديل الرد من قبل المسؤول`;
                         break;
                     default:
                         icon = 'fa-bell';
@@ -1919,7 +2054,6 @@
             
             push(ref(db, 'notifications'), notificationData);
             
-            // إشعار فوري للمستخدم إذا كان موجوداً في النظام
             if (currentUser && (currentUser.name === targetUser || currentUser.role === 'admin')) {
                 let title, message;
                 switch(type) {
@@ -1939,6 +2073,14 @@
                         title = '⚠️ تنبيه تكرار';
                         message = `تم اكتشاف طلب مكرر من ${sender}`;
                         break;
+                    case 'order_edited':
+                        title = '✏️ تعديل الطلب';
+                        message = `تم تعديل الطلب من قبل ${sender}`;
+                        break;
+                    case 'reply_edited':
+                        title = '✏️ تعديل الرد';
+                        message = `تم تعديل الرد من قبل المسؤول`;
+                        break;
                 }
                 
                 showPushNotification(title, message, type === 'duplicate_warning' ? 'warning' : 'info');
@@ -1950,30 +2092,25 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            // التحقق من نوع الملف
             if (!file.type.match('image.*')) {
                 alert('يرجى اختيار ملف صورة فقط');
                 return;
             }
             
-            // التحقق من حجم الملف (5MB كحد أقصى)
             if (file.size > 5 * 1024 * 1024) {
                 alert('حجم الصورة كبير جداً. الحد الأقصى هو 5MB');
                 return;
             }
             
-            // عرض مؤشر التحميل
             const btn = document.getElementById('submit-btn');
             const originalBtnText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-compress-alt fa-spin ml-2"></i> جاري ضغط الصورة...';
             
             try {
-                // ضغط الصورة
                 const compressionResult = await compressImage(file);
                 selectedImageFile = compressionResult.file;
                 
-                // عرض معلومات الضغط
                 const compressionInfo = document.getElementById('compression-info');
                 if (compressionResult.compressionRatio > 0) {
                     compressionInfo.innerHTML = `
@@ -1988,14 +2125,11 @@
                     `;
                 }
                 
-                // إنشاء URL للمعاينة
                 imagePreviewUrl = URL.createObjectURL(selectedImageFile);
                 
-                // عرض المعاينة
                 const previewImg = document.getElementById('image-preview');
                 previewImg.src = imagePreviewUrl;
                 
-                // تبديل الأقسام
                 document.getElementById('no-image-section').classList.add('hidden');
                 document.getElementById('image-preview-section').classList.remove('hidden');
                 
@@ -2017,10 +2151,8 @@
                 imagePreviewUrl = null;
             }
             
-            // إعادة تعيين حقل الرفع
             document.getElementById('image-upload').value = '';
             
-            // تبديل الأقسام
             document.getElementById('no-image-section').classList.remove('hidden');
             document.getElementById('image-preview-section').classList.add('hidden');
             
@@ -2032,39 +2164,29 @@
             duplicateOrders = [];
             
             allOrders.forEach(existingOrder => {
-                // 1. مقارنة الجنس (مطلوب)
-                const genderMatch = newOrder.gender === existingOrder.gender;
+                if (newOrder.id === existingOrder.id) return;
                 
-                // 2. مقارنة تاريخ الميلاد (مطلوب)
+                const genderMatch = newOrder.gender === existingOrder.gender;
                 const birthMatch = newOrder.birth === existingOrder.birth;
                 
-                // 3. مقارنة تاريخ الانتساب (إذا كان موجوداً في كلا الطلبين)
                 let joinMatch = false;
                 if (newOrder.joinDate && existingOrder.joinDate) {
-                    // كلا الطلبين يحتويان على تاريخ انتساب - يجب أن يتطابقا
                     joinMatch = newOrder.joinDate === existingOrder.joinDate;
                 } else if (!newOrder.joinDate && !existingOrder.joinDate) {
-                    // كلاهما فارغ - يعتبر تطابق
                     joinMatch = true;
                 } else if (!newOrder.joinDate || !existingOrder.joinDate) {
-                    // أحدهما فارغ والآخر ليس فارغاً - لا يعتبر تطابق (تعديل بناءً على طلب العميل)
                     joinMatch = false;
                 }
                 
-                // 4. مقارنة الفئة (إذا كانت موجودة في كلا الطلبين)
                 let categoryMatch = false;
                 if (newOrder.category && existingOrder.category) {
-                    // كلا الطلبين يحتويان على فئة - يجب أن يتطابقا
                     categoryMatch = newOrder.category === existingOrder.category;
                 } else if (!newOrder.category && !existingOrder.category) {
-                    // كلاهما فارغ - يعتبر تطابق
                     categoryMatch = true;
                 } else if (!newOrder.category || !existingOrder.category) {
-                    // أحدهما فارغ والآخر ليس فارغاً - لا يعتبر تطابق (تعديل بناءً على طلب العميل)
                     categoryMatch = false;
                 }
                 
-                // الكشف عن التكرار إذا تطابقت جميع الحقول الأربعة
                 if (genderMatch && birthMatch && joinMatch && categoryMatch) {
                     duplicateOrders.push(existingOrder);
                 }
@@ -2077,7 +2199,6 @@
         document.getElementById('request-form').onsubmit = async (e) => {
             e.preventDefault();
             
-            // جمع البيانات من النموذج
             const gender = document.getElementById('gender').value;
             const subjectName = document.getElementById('subject-name').value.trim();
             const category = document.getElementById('category').value;
@@ -2089,20 +2210,17 @@
             const jYear = document.getElementById('j-year').value;
             const notes = document.getElementById('notes').value.trim();
             
-            // التحقق من الحقول المطلوبة (الجنس وتاريخ الميلاد فقط)
             if (!gender || !bDay || !bMonth || !bYear) {
                 alert("الرجاء ملء الجنس وتاريخ الميلاد (الحقول المطلوبة)");
                 return;
             }
             
-            // التحقق من وجود بيانات (صورة أو اسم)
             if (!subjectName && !selectedImageFile) {
                 if (!confirm("لم تقم بإضافة صورة أو اسم للطلب. هل تريد المتابعة؟")) {
                     return;
                 }
             }
             
-            // إعداد بيانات الطلب الجديد
             const birthDate = `${bDay}/${bMonth}/${bYear}`;
             let joinDate = '';
             if (jDay && jMonth && jYear) {
@@ -2123,36 +2241,32 @@
                 timestamp: new Date().toLocaleString('ar-EG'),
                 timestampOrder: Date.now(),
                 senderId: currentUser.name.replace(/\s+/g, '_') + '_' + Date.now(),
-                // إضافة حقول تتبع الحالة
                 statusTimeline: {
                     pending: {
                         status: "قيد المراجعة",
                         time: new Date().toLocaleString('ar-EG'),
                         timestamp: Date.now()
                     }
-                }
+                },
+                editHistory: [],
+                canEdit: true,
+                lastEditTime: Date.now()
             };
             
-            // حفظ بيانات الطلب الحالية لاستخدامها لاحقاً
             currentNewOrderData = newOrderData;
             
-            // فحص التكرار
             const hasDuplicates = checkForDuplicates(newOrderData);
             
             if (hasDuplicates) {
-                // عرض نافذة التنبيه
                 showDuplicateAlert(duplicateOrders, newOrderData);
             } else {
-                // لا يوجد تكرار، المتابعة في الإرسال العادي
                 await submitOrder(newOrderData, selectedImageFile);
             }
         };
 
-        // دالة عرض تنبيه التكرار (مخصصة للمستخدم والمسؤول فقط)
+        // دالة عرض تنبيه التكرار
         function showDuplicateAlert(duplicates, newOrder) {
-            // التحقق إذا كان المستخدم الحالي هو المسؤول أو مقدم الطلب
             if (currentUser.role !== 'admin' && newOrder.sender !== currentUser.name) {
-                // إذا لم يكن مسؤولاً وليس مقدم الطلب، تخطي التنبيه
                 submitOrder(newOrder, selectedImageFile);
                 return;
             }
@@ -2233,7 +2347,6 @@
             document.getElementById('duplicate-alert-content').innerHTML = alertContent;
             document.getElementById('duplicate-alert').classList.remove('hidden');
             
-            // إرسال إشعار للمسؤولين إذا كان المستخدم ليس مسؤول
             if (currentUser.role !== 'admin') {
                 sendDuplicateNotificationToAdmins(newOrder, duplicates);
             }
@@ -2241,7 +2354,6 @@
 
         // دالة إرسال إشعار التكرار للمسؤولين فقط
         function sendDuplicateNotificationToAdmins(newOrder, duplicates) {
-            // إرسال إشعار للمسؤول العام فقط
             sendNotification('duplicate_warning', 'المسؤول العام', currentUser.name, newOrder.subjectName);
             
             const notificationData = {
@@ -2250,11 +2362,9 @@
                 duplicateCount: duplicates.length,
                 timestamp: Date.now(),
                 notifiedAdmins: true,
-                // تحديد أن الإشعار للمسؤول فقط
                 forAdminOnly: true
             };
             
-            // تخزين الإشعار في قاعدة البيانات للمسؤولين
             try {
                 push(ref(db, 'admin_notifications'), notificationData);
             } catch (error) {
@@ -2270,13 +2380,11 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
             
-            // إضافة علامة أن الطلب مكرر
             currentNewOrderData.isDuplicate = true;
             currentNewOrderData.duplicateWarning = `⚠️ تنبيه: هذا الطلب مكرر ${duplicateOrders.length} مرة سابقة`;
             currentNewOrderData.duplicateReferences = duplicateOrders.map(d => d.id);
             
             try {
-                // تحويل الصورة إلى Base64 إذا كانت موجودة
                 if (selectedImageFile) {
                     try {
                         const base64Image = await convertImageToBase64(selectedImageFile);
@@ -2289,22 +2397,17 @@
                     }
                 }
                 
-                // إرسال الطلب
                 await push(ref(db, 'orders'), currentNewOrderData);
                 
-                // إرسال إشعار للمسؤول عن الطلب الجديد
                 sendNotification('new_order', 'المسؤول العام', currentUser.name, currentNewOrderData.subjectName);
                 
                 showPushNotification('تم إرسال الطلب', `تم إرسال الطلب مع تحذير التكرار (${duplicateOrders.length} مكرر)`, 'success');
                 
-                // إغلاق نافذة التنبيه
                 closeDuplicateAlert();
                 
-                // إعادة تعيين النموذج
                 document.getElementById('request-form').reset();
                 removeImage();
                 
-                // تحديث قائمة الطلبات
                 fetchOrders();
             } catch (error) {
                 showPushNotification('خطأ في الإرسال', error.message, 'warning');
@@ -2322,7 +2425,6 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الإرسال...';
             
             try {
-                // تحويل الصورة إلى Base64 إذا كانت موجودة
                 if (imageFile) {
                     try {
                         const base64Image = await convertImageToBase64(imageFile);
@@ -2335,10 +2437,8 @@
                     }
                 }
                 
-                // إرسال الطلب
                 await push(ref(db, 'orders'), orderData);
                 
-                // إرسال إشعار للمسؤول عن الطلب الجديد
                 sendNotification('new_order', 'المسؤول العام', currentUser.name, orderData.subjectName);
                 
                 if (!isForceSubmit) {
@@ -2394,19 +2494,18 @@
                         stats.total++;
                         if (order.status === "قيد المراجعة") stats.pending++; else stats.done++;
                         
-                        // حساب الطلبات المكررة
                         if (order.isDuplicate) {
                             duplicateCount++;
                         }
+                        
+                        // تحديث حالة إمكانية التعديل بناءً على الوقت
+                        updateOrderEditStatus(order);
                     }
                     
-                    // الكشف عن التكرار في الطلبات الموجودة
                     detectExistingDuplicates();
                     
-                    // تحليل إحصائيات المستخدمين
                     analyzeUsersStats();
                     
-                    // ترتيب الطلبات من الأحدث إلى الأقدم
                     allOrders.sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0));
                 }
                 
@@ -2414,7 +2513,6 @@
                 displayOrders(allOrders);
                 updateStats(stats);
                 
-                // تحديث النافذة الجانبية للمسؤول
                 if (currentUser.role === 'admin') {
                     updateUsersSidebar();
                     updateUsersBadge();
@@ -2422,11 +2520,35 @@
             });
         }
 
+        // دالة تحديث حالة إمكانية التعديل للطلب
+        function updateOrderEditStatus(order) {
+            const now = Date.now();
+            const orderTime = order.timestampOrder || now;
+            const timeDiff = now - orderTime;
+            const fifteenMinutes = 15 * 60 * 1000;
+            
+            // إذا كان الطلب لديه رد من المسؤول
+            if (order.reply && order.replyTimestamp) {
+                const replyTime = new Date(order.replyTimestamp).getTime() || now;
+                const replyTimeDiff = now - replyTime;
+                
+                // يسمح بالتعديل خلال 15 دقيقة بعد الرد
+                order.canEdit = replyTimeDiff <= fifteenMinutes;
+            } else {
+                // يسمح بالتعديل خلال 15 دقيقة بعد الإرسال
+                order.canEdit = timeDiff <= fifteenMinutes;
+            }
+            
+            order.editTimeRemaining = Math.max(0, fifteenMinutes - (order.reply && order.replyTimestamp ? 
+                (now - (new Date(order.replyTimestamp).getTime() || now)) : timeDiff));
+            
+            return order;
+        }
+
         // دالة تحليل إحصائيات المستخدمين
         function analyzeUsersStats() {
             usersStats = {};
             
-            // تجميع الطلبات حسب المستخدم
             allOrders.forEach(order => {
                 if (!usersStats[order.sender]) {
                     usersStats[order.sender] = {
@@ -2452,7 +2574,6 @@
                     usersStats[order.sender].duplicates++;
                 }
                 
-                // تحديث آخر تاريخ طلب
                 if (order.timestampOrder > (usersStats[order.sender].lastOrderTimestamp || 0)) {
                     usersStats[order.sender].lastOrderDate = order.timestamp;
                     usersStats[order.sender].lastOrderTimestamp = order.timestampOrder;
@@ -2488,7 +2609,6 @@
         function displayUsersListSidebar() {
             const container = document.getElementById('users-list-sidebar');
             
-            // الحصول على قائمة المستخدمين الفعليين من الطلبات
             const activeUsers = Object.keys(usersStats);
             
             if (activeUsers.length === 0) {
@@ -2544,7 +2664,6 @@
                 return;
             }
             
-            // ترتيب المستخدمين حسب عدد الطلبات
             const sortedUsers = activeUsers.sort((a, b) => usersStats[b].total - usersStats[a].total);
             
             let statsHTML = '';
@@ -2642,7 +2761,6 @@
                     <h4 class="font-bold text-gray-800 text-lg">آخر طلبات ${currentFocusedUser}</h4>
             `;
             
-            // عرض آخر 5 طلبات للمستخدم
             const latestOrders = userStats.orders
                 .sort((a, b) => (b.timestampOrder || 0) - (a.timestampOrder || 0))
                 .slice(0, 5);
@@ -2682,14 +2800,11 @@
         window.focusOnUserFromSidebar = function(userName) {
             currentFocusedUser = userName;
             
-            // تحديث الواجهة الرئيسية
             document.getElementById('orders-section-title').innerText = `طلبات ${userName}`;
             document.getElementById('back-to-all-btn').classList.remove('hidden');
             
-            // تحديث النافذة الجانبية
             switchSidebarTab('focus-user');
             
-            // تحديث قائمة الطلبات
             displayOrders(allOrders);
             
             showPushNotification(`التركيز على ${userName}`, `عرض طلبات المستخدم المحدد`, 'info');
@@ -2700,7 +2815,6 @@
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
             
-            // فتح نافذة عرض الطلب
             openReplyModal(orderId);
         };
 
@@ -2710,12 +2824,10 @@
             document.getElementById('orders-section-title').innerText = currentUser.role === 'admin' ? 'سجل جميع الطلبات' : 'سجل طلباتك';
             document.getElementById('back-to-all-btn').classList.add('hidden');
             
-            // إذا كانت النافذة الجانبية مفتوحة، العودة لقائمة المستخدمين
             if (document.getElementById('users-sidebar').classList.contains('active')) {
                 switchSidebarTab('users-list');
             }
             
-            // تحديث قائمة الطلبات
             displayOrders(allOrders);
             
             showPushNotification('العودة للجميع', 'عرض جميع الطلبات', 'info');
@@ -2725,7 +2837,6 @@
         window.switchSidebarTab = function(tabName) {
             currentSidebarTab = tabName;
             
-            // تحديث التبويبات النشطة
             document.querySelectorAll('.sidebar-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -2733,11 +2844,9 @@
                 content.classList.add('hidden');
             });
             
-            // تفعيل التبويب المحدد
             document.querySelector(`.sidebar-tab[onclick*="${tabName}"]`).classList.add('active');
             document.getElementById(`sidebar-tab-${tabName}`).classList.remove('hidden');
             
-            // تحديث محتوى التبويب
             updateUsersSidebar();
         };
 
@@ -2761,7 +2870,6 @@
             sidebar.classList.add('active');
             overlay.classList.add('active');
             
-            // تحديث محتوى النافذة الجانبية
             updateUsersSidebar();
         }
 
@@ -2780,7 +2888,6 @@
         function detectExistingDuplicates() {
             const duplicatesMap = new Map();
             
-            // إنشاء مفتوح فريد لكل طلب بناءً على البيانات الأربعة
             allOrders.forEach(order => {
                 const key = `${order.gender}_${order.birth}_${order.joinDate || 'nojoin'}_${order.category || 'nocat'}`;
                 
@@ -2790,7 +2897,6 @@
                 duplicatesMap.get(key).push(order);
             });
             
-            // تحديث علامات التكرار
             duplicatesMap.forEach(orders => {
                 if (orders.length > 1) {
                     orders.forEach(order => {
@@ -2804,14 +2910,13 @@
         // دالة عرض الطلبات مع ترتيب محسّن
         function displayOrders(orders) {
             if (isFiltering) {
-                return; // تجنب التحديثات المتعددة المتزامنة
+                return;
             }
             
             const container = document.getElementById('orders-cards-container');
             const searchTerm = document.getElementById('search-box').value.toLowerCase();
             const filter = document.getElementById('filter-status').value;
             
-            // إظهار مؤشر التحميل على الهاتف
             const isMobile = window.innerWidth < 768;
             const loadingIndicator = document.getElementById('filter-loading');
             
@@ -2819,7 +2924,6 @@
                 isFiltering = true;
                 loadingIndicator.classList.add('active');
                 
-                // استخدام setTimeout لتجنب تجميد واجهة المستخدم
                 setTimeout(() => {
                     performFilterAndDisplay(orders, container, searchTerm, filter, isMobile);
                 }, 50);
@@ -2831,13 +2935,10 @@
         // دالة تنفيذ الفلترة والعرض
         function performFilterAndDisplay(orders, container, searchTerm, filter, isMobile) {
             try {
-                // تصفية الطلبات
                 let filteredOrders = orders.filter(o => {
                     if (currentFocusedUser) {
-                        // التركيز على مستخدم معين
                         if (o.sender !== currentFocusedUser) return false;
                     } else if (currentUser.role !== 'admin' && o.sender !== currentUser.name) {
-                        // المستخدم العادي يرى فقط طلباته
                         return false;
                     }
                     
@@ -2847,13 +2948,10 @@
                     return true;
                 });
                 
-                // تحسين الترتيب: الطلبات قيد المراجعة أولاً، ثم المكتملة
                 filteredOrders.sort((a, b) => {
-                    // أولاً: ترتيب حسب الحالة (قيد المراجعة أولاً)
                     if (a.status === 'قيد المراجعة' && b.status !== 'قيد المراجعة') return -1;
                     if (a.status !== 'قيد المراجعة' && b.status === 'قيد المراجعة') return 1;
                     
-                    // ثانياً: ترتيب حسب التاريخ (الأحدث أولاً)
                     return (b.timestampOrder || 0) - (a.timestampOrder || 0);
                 });
                 
@@ -2870,12 +2968,10 @@
                     return;
                 }
                 
-                // تجميع البطاقات في أقسام
                 let cardsHTML = '';
                 let hasPending = false;
                 let hasCompleted = false;
                 
-                // قسم الطلبات قيد المراجعة
                 let pendingOrders = filteredOrders.filter(o => o.status === 'قيد المراجعة');
                 if (pendingOrders.length > 0 && (!filter || filter === '' || filter === 'قيد المراجعة')) {
                     hasPending = true;
@@ -2893,7 +2989,6 @@
                     });
                 }
                 
-                // قسم الطلبات المكتملة
                 let completedOrders = filteredOrders.filter(o => o.status === 'مكتمل');
                 if (completedOrders.length > 0 && (!filter || filter === '' || filter === 'مكتمل')) {
                     hasCompleted = true;
@@ -2922,7 +3017,6 @@
                     });
                 }
                 
-                // إذا كان هناك فلتر محدد ولم تظهر أي أقسام
                 if ((filter === 'قيد المراجعة' && !hasPending) || (filter === 'مكتمل' && !hasCompleted)) {
                     const filterName = filter === 'قيد المراجعة' ? 'قيد المراجعة' : 'المكتملة';
                     cardsHTML = `
@@ -2933,9 +3027,7 @@
                     `;
                 }
                 
-                // تحديث واجهة المستخدم مع التحسين للأداء
                 if (isMobile) {
-                    // على الهاتف، استخدام requestAnimationFrame لتحسين الأداء
                     requestAnimationFrame(() => {
                         container.innerHTML = cardsHTML;
                         updateDuplicateCounter();
@@ -2962,19 +3054,30 @@
             }
         }
 
-        // دالة إنشاء HTML لبطاقة الطلب
+        // دالة إنشاء HTML لبطاقة الطلب مع إضافة خاصية التعديل
         function generateOrderCardHTML(order) {
             const isDuplicate = order.isDuplicate || order.hasDuplicates;
             const statusClass = order.status === 'مكتمل' ? 'completed' : 'pending';
             const duplicateClass = isDuplicate ? 'duplicate' : '';
             
-            // إظهار علامة التكرار فقط للمسؤول ومقدم الطلب
             let showDuplicateBadge = false;
             if (isDuplicate) {
                 if (currentUser.role === 'admin' || order.sender === currentUser.name) {
                     showDuplicateBadge = true;
                 }
             }
+            
+            // أيقونة الجنس
+            const genderIcon = order.gender === 'أنثى' ? '👩‍🦳' : '👨‍🦳';
+            const genderBadge = `<div class="gender-badge">${genderIcon}</div>`;
+            
+            // شارة التعديل إذا تم تعديل الطلب
+            const editBadge = order.editHistory && order.editHistory.length > 0 ? `
+                <div class="edit-badge">
+                    <i class="fas fa-edit"></i>
+                    ${order.editHistory.length} تعديل
+                </div>
+            ` : '';
             
             const statusBadge = order.status === 'مكتمل' 
                 ? '<span class="badge badge-success"><i class="fas fa-check-circle ml-1"></i> مكتمل</span>'
@@ -2986,6 +3089,30 @@
                     مكرر
                 </div>
             ` : '';
+            
+            // مؤقت التعديل
+            let editTimerHTML = '';
+            if (order.canEdit !== undefined) {
+                const minutesRemaining = Math.floor(order.editTimeRemaining / (60 * 1000));
+                const secondsRemaining = Math.floor((order.editTimeRemaining % (60 * 1000)) / 1000);
+                
+                let timerClass = 'edit-timer';
+                let timerText = '';
+                
+                if (order.canEdit) {
+                    if (minutesRemaining < 5) {
+                        timerClass += ' warning';
+                        timerText = `⏳ ${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
+                    } else {
+                        timerText = `🕒 ${minutesRemaining} دقيقة`;
+                    }
+                } else {
+                    timerClass += ' expired';
+                    timerText = '⛔ انتهى الوقت';
+                }
+                
+                editTimerHTML = `<div class="${timerClass}"><i class="fas fa-clock"></i> ${timerText}</div>`;
+            }
             
             const categoryDisplay = order.category 
                 ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">فئة ${order.category}</span>`
@@ -3027,11 +3154,34 @@
             if (order.statusTimeline) {
                 statusTimelineHTML = generateStatusTimelineHTML(order.statusTimeline);
             } else {
-                // إنشاء جدول زمني افتراضي للطلبات القديمة
                 statusTimelineHTML = generateDefaultTimelineHTML(order);
             }
             
-            // معلومات التكرار (تظهر فقط للمسؤول ومقدم الطلب)
+            // تنويه التعديل إذا تم تعديل الطلب
+            let editNoticeHTML = '';
+            if (order.editHistory && order.editHistory.length > 0) {
+                const lastEdit = order.editHistory[order.editHistory.length - 1];
+                editNoticeHTML = `
+                    <div class="edit-notice">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-edit text-amber-600"></i>
+                            <span class="font-bold text-amber-700">تم تعديل هذا الطلب</span>
+                        </div>
+                        <p class="text-sm text-amber-800">
+                            آخر تعديل: ${lastEdit.timestamp || 'غير معروف'}
+                            ${lastEdit.editedBy ? `بواسطة: ${lastEdit.editedBy}` : ''}
+                        </p>
+                        ${order.editHistory.length > 1 ? `
+                            <p class="text-xs text-amber-600 mt-1">
+                                <i class="fas fa-history ml-1"></i>
+                                عدد مرات التعديل: ${order.editHistory.length}
+                            </p>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // معلومات التكرار
             let duplicateInfo = '';
             if (showDuplicateBadge) {
                 const duplicateMsg = order.isDuplicate 
@@ -3063,6 +3213,16 @@
                 </div>
             ` : '';
             
+            // زر التعديل للمستخدم إذا كان الطلب خاص به ولا يزال قيد المراجعة
+            let editButtonHTML = '';
+            if (currentUser.name === order.sender && order.status === "قيد المراجعة" && order.canEdit) {
+                editButtonHTML = `
+                    <button onclick="openEditOrderModal('${order.id}')" class="btn btn-edit py-2 text-sm">
+                        <i class="fas fa-edit ml-1"></i> تعديل الطلب
+                    </button>
+                `;
+            }
+            
             let actionsHTML = '';
             if (currentUser.role === 'admin') {
                 actionsHTML = `
@@ -3070,24 +3230,30 @@
                         <button onclick="openReplyModal('${order.id}')" class="flex-1 btn btn-primary py-2 text-sm">
                             <i class="fas fa-reply ml-1"></i> رد المسؤول
                         </button>
+                        ${editButtonHTML}
                         <button onclick="deleteOrder('${order.id}')" class="btn btn-danger px-4">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 `;
-            } else if (order.sender === currentUser.name && order.status === "قيد المراجعة") {
+            } else if (order.sender === currentUser.name) {
                 actionsHTML = `
                     <div class="flex gap-2 mt-4">
-                        <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
-                            <i class="fas fa-trash ml-1"></i> حذف الطلب
-                        </button>
+                        ${editButtonHTML}
+                        ${order.status === "قيد المراجعة" ? `
+                            <button onclick="deleteOrder('${order.id}')" class="flex-1 btn btn-danger py-2 text-sm">
+                                <i class="fas fa-trash ml-1"></i> حذف الطلب
+                            </button>
+                        ` : ''}
                     </div>
                 `;
             }
             
             return `
                 <div class="order-card ${statusClass} ${duplicateClass}" data-id="${order.id}">
+                    ${genderBadge}
                     ${duplicateBadge}
+                    ${editBadge}
                     
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex-1">
@@ -3098,6 +3264,7 @@
                         </div>
                         <div class="flex flex-col items-end">
                             ${statusBadge}
+                            ${editTimerHTML}
                             <span class="text-xs text-gray-500 mt-2">${order.timestamp}</span>
                         </div>
                     </div>
@@ -3105,7 +3272,7 @@
                     <div class="space-y-2">
                         <div class="order-info-row">
                             <span class="label">الجنس:</span>
-                            <span class="value">${order.gender || '-'}</span>
+                            <span class="value">${order.gender || '-'} ${order.gender === 'أنثى' ? '👩‍🦳' : '👨‍🦳'}</span>
                         </div>
                         <div class="order-info-row">
                             <span class="label">تاريخ الميلاد:</span>
@@ -3123,6 +3290,7 @@
                     
                     ${imageDisplay}
                     ${notesDisplay}
+                    ${editNoticeHTML}
                     ${statusTimelineHTML}
                     ${duplicateInfo}
                     
@@ -3153,7 +3321,6 @@
         function generateStatusTimelineHTML(statusTimeline) {
             let html = '<div class="order-status-timeline">';
             
-            // حالة قيد المراجعة
             if (statusTimeline.pending) {
                 html += `
                     <div class="status-item">
@@ -3167,7 +3334,6 @@
                 `;
             }
             
-            // حالة مشاهدة المسؤول (إذا كانت موجودة)
             if (statusTimeline.viewed) {
                 html += `
                     <div class="status-item">
@@ -3181,7 +3347,6 @@
                 `;
             }
             
-            // حالة اكتمال الطلب (إذا كانت موجودة)
             if (statusTimeline.completed) {
                 html += `
                     <div class="status-item">
@@ -3202,7 +3367,6 @@
         function generateDefaultTimelineHTML(order) {
             let html = '<div class="order-status-timeline">';
             
-            // حالة قيد المراجعة (تاريخ الإرسال)
             html += `
                 <div class="status-item">
                     <div class="status-dot pending"></div>
@@ -3214,7 +3378,6 @@
                 <div class="status-separator"></div>
             `;
             
-            // حالة اكتمال الطلب (إذا كان الطلب مكتملاً)
             if (order.status === 'مكتمل') {
                 const completionTime = order.replyTimestamp || order.timestamp;
                 html += `
@@ -3234,20 +3397,16 @@
 
         // دالة تحديث عداد الطلبات المكررة
         function updateDuplicateCounter() {
-            // تحديث العداد بناءً على الطلبات المكررة
             let visibleDuplicateCount = 0;
             if (currentUser.role === 'admin') {
                 if (currentFocusedUser) {
-                    // المسؤول يرى طلبات المستخدم المحدد فقط
                     visibleDuplicateCount = allOrders.filter(o => 
                         o.isDuplicate && o.sender === currentFocusedUser
                     ).length;
                 } else {
-                    // المسؤول يرى جميع الطلبات المكررة
                     visibleDuplicateCount = duplicateCount;
                 }
             } else {
-                // المستخدم يرى فقط طلباته المكررة
                 visibleDuplicateCount = allOrders.filter(o => 
                     o.isDuplicate && o.sender === currentUser.name
                 ).length;
@@ -3266,20 +3425,18 @@
             const searchBox = document.getElementById('search-box');
             const filterStatus = document.getElementById('filter-status');
             
-            // تحسين البحث مع تأخير debounce لتجنب التحميل الزائد
             searchBox.addEventListener('input', () => {
                 clearTimeout(filterTimeout);
                 filterTimeout = setTimeout(() => {
                     displayOrders(allOrders);
-                }, window.innerWidth < 768 ? 300 : 150); // وقت أطول على الهاتف
+                }, window.innerWidth < 768 ? 300 : 150);
             });
             
-            // تحسين الفلترة مع معالجة أفضل للأداء
             filterStatus.addEventListener('change', () => {
                 clearTimeout(filterTimeout);
                 filterTimeout = setTimeout(() => {
                     displayOrders(allOrders);
-                }, window.innerWidth < 768 ? 100 : 50); // وقت أقل للفلترة
+                }, window.innerWidth < 768 ? 100 : 50);
             });
         }
 
@@ -3305,7 +3462,456 @@
                 .catch(() => alert("حدث خطأ في النسخ"));
         };
 
-        // دالة فتح مودال رد المسؤول
+        // دالة فتح مودال تعديل الطلب للمستخدم
+        window.openEditOrderModal = async function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // التحقق من إمكانية التعديل
+            if (!order.canEdit) {
+                alert("انتهى وقت التعديل المسموح به (15 دقيقة فقط بعد الإرسال أو بعد الرد)");
+                return;
+            }
+            
+            if (order.sender !== currentUser.name) {
+                alert("لا يمكنك تعديل طلبات المستخدمين الآخرين");
+                return;
+            }
+            
+            selectedOrderId = orderId;
+            
+            document.getElementById('modal-edit-title').innerText = 'تعديل الطلب';
+            
+            let imageSection = '';
+            if (order.imageData) {
+                imageSection = `
+                    <div class="mt-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">الصورة المرفقة الحالية:</p>
+                        <img src="${order.imageData}" 
+                             alt="صورة الطلب" 
+                             class="w-full max-w-xs mx-auto rounded-lg cursor-pointer"
+                             onclick="openImageModal('${order.imageData}')"
+                             title="انقر لعرض الصورة بالحجم الكامل">
+                        ${order.imageName ? `<p class="text-xs text-gray-500 text-center mt-2">${order.imageName}</p>` : ''}
+                        <div class="mt-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-sync-alt ml-1"></i> تغيير الصورة (اختياري)
+                            </label>
+                            <input 
+                                type="file" 
+                                id="edit-image-upload" 
+                                accept="image/*" 
+                                class="w-full p-2 border rounded-lg"
+                                onchange="previewEditImage(event)"
+                            >
+                            <div id="edit-image-preview-section" class="hidden mt-3">
+                                <img id="edit-image-preview" src="" alt="معاينة الصورة الجديدة" class="w-full max-w-xs mx-auto rounded-lg">
+                                <button type="button" onclick="removeEditImage()" class="mt-2 text-sm text-red-600">
+                                    <i class="fas fa-trash ml-1"></i> إزالة الصورة الجديدة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                imageSection = `
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-image ml-1"></i> إضافة صورة (اختياري)
+                        </label>
+                        <input 
+                            type="file" 
+                            id="edit-image-upload" 
+                            accept="image/*" 
+                            class="w-full p-2 border rounded-lg"
+                            onchange="previewEditImage(event)"
+                        >
+                        <div id="edit-image-preview-section" class="hidden mt-3">
+                            <img id="edit-image-preview" src="" alt="معاينة الصورة الجديدة" class="w-full max-w-xs mx-auto rounded-lg">
+                            <button type="button" onclick="removeEditImage()" class="mt-2 text-sm text-red-600">
+                                <i class="fas fa-trash ml-1"></i> إزالة الصورة
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // تحليل تاريخ الميلاد
+            let bDay = '', bMonth = '', bYear = '';
+            if (order.birth && order.birth.includes('/')) {
+                const birthParts = order.birth.split('/');
+                if (birthParts.length === 3) {
+                    bDay = birthParts[0];
+                    bMonth = birthParts[1];
+                    bYear = birthParts[2];
+                }
+            }
+            
+            // تحليل تاريخ الانتساب
+            let jDay = '', jMonth = '', jYear = '';
+            if (order.joinDate && order.joinDate.includes('/')) {
+                const joinParts = order.joinDate.split('/');
+                if (joinParts.length === 3) {
+                    jDay = joinParts[0];
+                    jMonth = joinParts[1];
+                    jYear = joinParts[2];
+                }
+            }
+            
+            document.getElementById('modal-edit-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <p class="text-sm font-bold text-amber-800 mb-2">
+                            <i class="fas fa-info-circle ml-1"></i>
+                            ملاحظة: يمكنك التعديل خلال 15 دقيقة فقط من وقت الإرسال أو بعد الرد
+                        </p>
+                        <p class="text-xs text-amber-700">
+                            سيتم إرسال إشعار للمسؤولين يفيد بأن الطلب قد تم تعديله
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user ml-1 text-gray-400"></i> الجنس *
+                            </label>
+                            <select id="edit-gender" required class="w-full">
+                                <option value="ذكر" ${order.gender === 'ذكر' ? 'selected' : ''}>👨‍🦳 ذكر</option>
+                                <option value="أنثى" ${order.gender === 'أنثى' ? 'selected' : ''}>👩‍🦳 أنثى</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user-tag ml-1 text-gray-400"></i> اسم صاحب الطلب
+                                <span class="text-gray-400 text-xs">(اختياري)</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="edit-subject-name" 
+                                value="${order.subjectName || ''}"
+                                placeholder="الاسم الكامل"
+                                class="w-full"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-birthday-cake ml-1 text-gray-400"></i> تاريخ الميلاد *
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-b-day" 
+                                        required 
+                                        min="1" 
+                                        max="31"
+                                        placeholder="يوم"
+                                        class="text-center"
+                                        value="${bDay}"
+                                    >
+                                </div>
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-b-month" 
+                                        required 
+                                        min="1" 
+                                        max="12"
+                                        placeholder="شهر"
+                                        class="text-center"
+                                        value="${bMonth}"
+                                    >
+                                </div>
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-b-year" 
+                                        required 
+                                        min="1900" 
+                                        max="2026"
+                                        placeholder="سنة"
+                                        class="text-center"
+                                        value="${bYear}"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt ml-1 text-gray-400"></i> تاريخ الانتساب
+                                <span class="text-gray-400 text-xs">(اختياري)</span>
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-j-day" 
+                                        min="1" 
+                                        max="31"
+                                        placeholder="يوم"
+                                        class="text-center"
+                                        value="${jDay}"
+                                    >
+                                </div>
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-j-month" 
+                                        min="1" 
+                                        max="12"
+                                        placeholder="شهر"
+                                        class="text-center"
+                                        value="${jMonth}"
+                                    >
+                                </div>
+                                <div>
+                                    <input 
+                                        type="number" 
+                                        id="edit-j-year" 
+                                        min="1900" 
+                                        max="2026"
+                                        placeholder="سنة"
+                                        class="text-center"
+                                        value="${jYear}"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-layer-group ml-1 text-gray-400"></i> الفئة
+                                <span class="text-gray-400 text-xs">(اختياري)</span>
+                            </label>
+                            <select id="edit-category" class="w-full">
+                                <option value="">اختر الفئة (اختياري)</option>
+                                <option value="1" ${order.category === '1' ? 'selected' : ''}>الفئة 1</option>
+                                <option value="2" ${order.category === '2' ? 'selected' : ''}>الفئة 2</option>
+                                <option value="3" ${order.category === '3' ? 'selected' : ''}>الفئة 3</option>
+                                <option value="4" ${order.category === '4' ? 'selected' : ''}>الفئة 4</option>
+                                <option value="5" ${order.category === '5' ? 'selected' : ''}>الفئة 5</option>
+                                <option value="6" ${order.category === '6' ? 'selected' : ''}>الفئة 6</option>
+                                <option value="7" ${order.category === '7' ? 'selected' : ''}>الفئة 7</option>
+                                <option value="8" ${order.category === '8' ? 'selected' : ''}>الفئة 8</option>
+                                <option value="9" ${order.category === '9' ? 'selected' : ''}>الفئة 9</option>
+                                <option value="10" ${order.category === '10' ? 'selected' : ''}>الفئة 10</option>
+                                <option value="11" ${order.category === '11' ? 'selected' : ''}>الفئة 11</option>
+                                <option value="12" ${order.category === '12' ? 'selected' : ''}>الفئة 12</option>
+                                <option value="13" ${order.category === '13' ? 'selected' : ''}>الفئة 13</option>
+                                <option value="14" ${order.category === '14' ? 'selected' : ''}>الفئة 14</option>
+                                <option value="15" ${order.category === '15' ? 'selected' : ''}>الفئة 15</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-sticky-note ml-1 text-gray-400"></i> الملاحظات
+                                <span class="text-gray-400 text-xs">(اختياري)</span>
+                            </label>
+                            <textarea 
+                                id="edit-notes" 
+                                rows="3" 
+                                placeholder="أي تفاصيل أو معلومات إضافية..."
+                                class="w-full"
+                            >${order.notes || ''}</textarea>
+                        </div>
+                    </div>
+                    
+                    ${imageSection}
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-700">
+                            <i class="fas fa-history ml-1"></i>
+                            <span class="font-bold">سجل التعديلات:</span>
+                            ${order.editHistory && order.editHistory.length > 0 ? 
+                                `${order.editHistory.length} تعديل` : 
+                                'لا توجد تعديلات سابقة'}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal-edit-order').classList.remove('hidden');
+            
+            // إعادة تعيين متغيرات الصورة للتعديل
+            window.editSelectedImageFile = null;
+            window.editImagePreviewUrl = null;
+        };
+
+        // دالة معاينة الصورة للتعديل
+        window.previewEditImage = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                alert('يرجى اختيار ملف صورة فقط');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('حجم الصورة كبير جداً. الحد الأقصى هو 5MB');
+                return;
+            }
+            
+            try {
+                const compressionResult = await compressImage(file);
+                window.editSelectedImageFile = compressionResult.file;
+                
+                window.editImagePreviewUrl = URL.createObjectURL(window.editSelectedImageFile);
+                
+                const previewImg = document.getElementById('edit-image-preview');
+                previewImg.src = window.editImagePreviewUrl;
+                
+                document.getElementById('edit-image-preview-section').classList.remove('hidden');
+            } catch (error) {
+                console.error('خطأ في معالجة الصورة:', error);
+                alert('حدث خطأ في معالجة الصورة. يرجى المحاولة مرة أخرى.');
+            }
+        };
+
+        // دالة حذف الصورة في التعديل
+        window.removeEditImage = function() {
+            window.editSelectedImageFile = null;
+            if (window.editImagePreviewUrl) {
+                URL.revokeObjectURL(window.editImagePreviewUrl);
+                window.editImagePreviewUrl = null;
+            }
+            
+            document.getElementById('edit-image-upload').value = '';
+            document.getElementById('edit-image-preview-section').classList.add('hidden');
+        };
+
+        // دالة حفظ تعديل الطلب
+        window.saveOrderEdit = async function() {
+            const order = allOrders.find(o => o.id === selectedOrderId);
+            if (!order) return;
+            
+            // التحقق من إمكانية التعديل
+            if (!order.canEdit) {
+                alert("انتهى وقت التعديل المسموح به (15 دقيقة فقط بعد الإرسال أو بعد الرد)");
+                return;
+            }
+            
+            const gender = document.getElementById('edit-gender').value;
+            const subjectName = document.getElementById('edit-subject-name').value.trim();
+            const category = document.getElementById('edit-category').value;
+            const bDay = document.getElementById('edit-b-day').value;
+            const bMonth = document.getElementById('edit-b-month').value;
+            const bYear = document.getElementById('edit-b-year').value;
+            const jDay = document.getElementById('edit-j-day').value;
+            const jMonth = document.getElementById('edit-j-month').value;
+            const jYear = document.getElementById('edit-j-year').value;
+            const notes = document.getElementById('edit-notes').value.trim();
+            
+            if (!gender || !bDay || !bMonth || !bYear) {
+                alert("الرجاء ملء الجنس وتاريخ الميلاد (الحقول المطلوبة)");
+                return;
+            }
+            
+            if (!subjectName && !order.imageData && !window.editSelectedImageFile) {
+                if (!confirm("لم تقم بإضافة صورة أو اسم للطلب. هل تريد المتابعة؟")) {
+                    return;
+                }
+            }
+            
+            const birthDate = `${bDay}/${bMonth}/${bYear}`;
+            let joinDate = '';
+            if (jDay && jMonth && jYear) {
+                joinDate = `${jDay}/${jMonth}/${jYear}`;
+            }
+            
+            // تحديث بيانات الطلب
+            const updatedOrderData = {
+                ...order,
+                gender: gender,
+                subjectName: subjectName || 'بدون اسم',
+                category: category || '',
+                birth: birthDate,
+                joinDate: joinDate,
+                notes: notes,
+                lastEditTime: Date.now(),
+                canEdit: order.canEdit
+            };
+            
+            // معالجة الصورة
+            if (window.editSelectedImageFile) {
+                try {
+                    const base64Image = await convertImageToBase64(window.editSelectedImageFile);
+                    updatedOrderData.imageData = base64Image;
+                    updatedOrderData.hasImage = true;
+                    updatedOrderData.imageName = window.editSelectedImageFile.name;
+                } catch (imageError) {
+                    console.error('خطأ في تحويل الصورة:', imageError);
+                    alert('حدث خطأ في معالجة الصورة. سيتم الاحتفاظ بالصورة القديمة.');
+                }
+            }
+            
+            // إضافة سجل التعديل
+            if (!updatedOrderData.editHistory) {
+                updatedOrderData.editHistory = [];
+            }
+            
+            const editRecord = {
+                timestamp: new Date().toLocaleString('ar-EG'),
+                editedBy: currentUser.name,
+                changes: {
+                    gender: order.gender !== gender,
+                    subjectName: order.subjectName !== subjectName,
+                    birth: order.birth !== birthDate,
+                    joinDate: order.joinDate !== joinDate,
+                    category: order.category !== category,
+                    notes: order.notes !== notes,
+                    image: !!window.editSelectedImageFile
+                }
+            };
+            
+            updatedOrderData.editHistory.push(editRecord);
+            
+            const btn = document.getElementById('modal-edit-save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحفظ...';
+            
+            try {
+                // حفظ البيانات المحدثة
+                await update(ref(db, 'orders/' + selectedOrderId), updatedOrderData);
+                
+                // إرسال إشعار للمسؤولين
+                sendNotification('order_edited', 'المسؤول العام', currentUser.name, subjectName, selectedOrderId);
+                
+                showPushNotification('تم تعديل الطلب', 'تم تحديث الطلب بنجاح وإرسال إشعار للمسؤولين', 'success');
+                
+                closeEditModal();
+                fetchOrders();
+            } catch (error) {
+                showPushNotification('خطأ في التعديل', error.message, 'warning');
+                alert("حدث خطأ في تعديل الطلب: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save ml-2"></i> حفظ التعديلات';
+            }
+        };
+
+        // دالة إغلاق مودال التعديل
+        window.closeEditModal = function() {
+            document.getElementById('modal-edit-order').classList.add('hidden');
+            selectedOrderId = '';
+            
+            // تنظيف متغيرات الصورة
+            if (window.editImagePreviewUrl) {
+                URL.revokeObjectURL(window.editImagePreviewUrl);
+                window.editImagePreviewUrl = null;
+            }
+            window.editSelectedImageFile = null;
+        };
+
+        // دالة فتح مودال رد المسؤول مع إضافة خاصية التعديل
         window.openReplyModal = function(orderId) {
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
@@ -3329,6 +3935,19 @@
                 `;
             }
             
+            // زر تعديل الرد للمسؤول إذا كان هناك رد سابق
+            let editReplyButton = '';
+            if (order.reply && currentUser.role === 'admin') {
+                editReplyButton = `
+                    <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                        <p class="text-sm text-blue-700">
+                            <i class="fas fa-info-circle ml-1"></i>
+                            هناك رد سابق على هذا الطلب. يمكنك تعديله وسيتم إشعار المستخدم.
+                        </p>
+                    </div>
+                `;
+            }
+            
             document.getElementById('modal-content').innerHTML = `
                 <div class="space-y-4">
                     <div class="bg-blue-50 p-4 rounded-lg">
@@ -3343,9 +3962,19 @@
                                 <p class="text-sm text-gray-600">تاريخ الميلاد:</p>
                                 <p class="font-medium">${order.birth || '-'}</p>
                             </div>
+                            <div>
+                                <p class="text-sm text-gray-600">الجنس:</p>
+                                <p class="font-medium">${order.gender || '-'} ${order.gender === 'أنثى' ? '👩‍🦳' : '👨‍🦳'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">الحالة:</p>
+                                <p class="font-medium ${order.status === 'مكتمل' ? 'text-green-600' : 'text-amber-600'}">${order.status}</p>
+                            </div>
                         </div>
                         ${imageSection}
                     </div>
+                    
+                    ${editReplyButton}
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -3372,6 +4001,25 @@
                             placeholder="ملاحظات إضافية خاصة..."
                         >${order.adminNotes || ''}</textarea>
                     </div>
+                    
+                    ${order.editHistory && order.editHistory.length > 0 ? `
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-history ml-1"></i> سجل تعديلات الطلب:
+                            </p>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                ${order.editHistory.map((edit, index) => `
+                                    <div class="p-2 bg-white rounded">
+                                        <div class="flex justify-between">
+                                            <span class="font-medium">التعديل ${index + 1}</span>
+                                            <span class="text-gray-500">${edit.timestamp}</span>
+                                        </div>
+                                        <p class="mt-1">بواسطة: ${edit.editedBy}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             
@@ -3379,7 +4027,7 @@
             document.getElementById('admin-reply-text').focus();
         };
 
-        // دالة حفظ رد المسؤول مع تحديث الجدول الزمني
+        // دالة حفظ رد المسؤول مع تحديث الجدول الزمني وإضافة خاصية التعديل
         window.saveReply = function() {
             const reply = document.getElementById('admin-reply-text').value.trim();
             const adminNotes = document.getElementById('admin-notes-text').value.trim();
@@ -3393,10 +4041,8 @@
             const currentTime = new Date().toLocaleString('ar-EG');
             const currentTimestamp = Date.now();
             
-            // تحديث بيانات الطلب مع الحفاظ على الجدول الزمني القديم
             const statusTimeline = order.statusTimeline || {};
             
-            // تحديث حالة مشاهدة المسؤول (إذا لم تكن موجودة)
             if (!statusTimeline.viewed) {
                 statusTimeline.viewed = {
                     status: "تمت المشاهدة من المسؤول",
@@ -3405,7 +4051,6 @@
                 };
             }
             
-            // تحديث حالة اكتمال الطلب
             statusTimeline.completed = {
                 status: "مكتمل",
                 time: currentTime,
@@ -3416,7 +4061,8 @@
                 reply: reply,
                 status: "مكتمل",
                 replyTimestamp: currentTime,
-                statusTimeline: statusTimeline
+                statusTimeline: statusTimeline,
+                lastEditTime: currentTimestamp
             };
             
             // إضافة ملاحظات المسؤول إن وجدت
@@ -3424,15 +4070,22 @@
                 updates.adminNotes = adminNotes;
             }
             
+            // التحقق إذا كان هناك رد سابق لإرسال إشعار التعديل
+            const isEdit = order.reply && order.reply.trim() !== '';
+            
             update(ref(db, 'orders/' + selectedOrderId), updates)
             .then(() => {
-                // إرسال إشعار للمستخدم عن الرد
-                sendNotification('order_replied', order.sender, 'المسؤول العام', order.subjectName);
+                if (isEdit) {
+                    // إرسال إشعار تعديل الرد
+                    sendNotification('reply_edited', order.sender, 'المسؤول العام', order.subjectName);
+                    showPushNotification('تم تعديل الرد', `تم تعديل الرد على طلب ${order.subjectName}`, 'success');
+                } else {
+                    // إرسال إشعار الرد الجديد
+                    sendNotification('order_replied', order.sender, 'المسؤول العام', order.subjectName);
+                    sendNotification('order_completed', order.sender, 'المسؤول العام', order.subjectName);
+                    showPushNotification('تم الرد على الطلب', `تم الرد على طلب ${order.subjectName}`, 'success');
+                }
                 
-                // إرسال إشعار اكتمال الطلب
-                sendNotification('order_completed', order.sender, 'المسؤول العام', order.subjectName);
-                
-                showPushNotification('تم الرد على الطلب', `تم الرد على طلب ${order.subjectName}`, 'success');
                 closeModal();
                 fetchOrders();
             })
@@ -3518,6 +4171,12 @@
                 if (document.getElementById('users-sidebar').classList.contains('active')) {
                     closeUsersSidebar();
                 }
+                if (!document.getElementById('modal-edit-order').classList.contains('hidden')) {
+                    closeEditModal();
+                }
+                if (!document.getElementById('modal-reply').classList.contains('hidden')) {
+                    closeModal();
+                }
             }
         });
 
@@ -3542,13 +4201,11 @@
             
             const file = e.dataTransfer.files[0];
             if (file && file.type.match('image.*')) {
-                // محاكاة تغيير input file
                 const input = document.getElementById('image-upload');
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 input.files = dataTransfer.files;
                 
-                // تشغيل دالة المعاينة
                 previewImage({ target: input });
             } else {
                 alert('يرجى اختيار ملف صورة فقط');
